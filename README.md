@@ -1,5 +1,6 @@
 # runllm
-![Uploading C89B7899-69B6-4872-88CE-AE36AE6269D1.png…]()
+<img width="1536" height="1024" alt="C89B7899-69B6-4872-88CE-AE36AE6269D1" src="https://github.com/user-attachments/assets/636fd58f-1f44-4bd3-9815-b9f52457201f" />
+
 
 Most LLM systems fail for predictable reasons:
 
