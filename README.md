@@ -51,9 +51,20 @@ This makes local and small-model workflows viable for many users, not only teams
 
 ## Install
 
+Recommended (global CLI, works from any directory):
+
+```bash
+pipx install runllm
+```
+
+For local development in this repository:
+
 ```bash
 pip install -e .
 ```
+
+If you used `pip install --user`, make sure your user scripts path is on `PATH`.
+See `docs/global-install.md`.
 
 ## Quickstart
 
@@ -137,6 +148,7 @@ See `examples/`.
 - Error reference: `docs/errors.md`
 - Composition guide: `docs/composition.md`
 - Ollama guide: `docs/ollama.md`
+- Global install: `docs/global-install.md`
 - Migration notes: `docs/migration.md`
 
 ## For coding agents

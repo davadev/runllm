@@ -21,4 +21,5 @@ Start here based on your role.
 - `cli.md`
 - `composition.md`
 - `ollama.md`
+- `global-install.md`
 - `migration.md`
