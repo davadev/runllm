@@ -22,3 +22,8 @@ When runtime behavior changes (for example retry logic, parsing behavior, or sup
 - `docs/errors.md`
 
 in the same PR/commit to preserve agent-scaffold reliability.
+
+## Recent compatibility notes
+
+- `llm.model` is now enforced during parse/validate (`RLLM_002`) instead of only at runtime.
+- Impact: apps that omitted `llm.model` and relied on `runllm run --model ...` now fail validation until `llm.model` is added to frontmatter.

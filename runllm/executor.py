@@ -24,7 +24,7 @@ from runllm.validation import (
 
 def _extract_content(response: Any) -> str:
     try:
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
     except Exception as exc:
         raise make_error(
             error_code="RLLM_011",
@@ -35,6 +35,17 @@ def _extract_content(response: Any) -> str:
             recovery_hint="Verify provider/model response compatibility.",
             doc_ref="docs/errors.md#RLLM_011",
         )
+    if not isinstance(content, str):
+        raise make_error(
+            error_code="RLLM_011",
+            error_type="ExecutionError",
+            message="Unexpected LiteLLM response content type.",
+            details={"actual_type": type(content).__name__},
+            received_payload=content,
+            recovery_hint="Use a provider/model combination that returns string message content.",
+            doc_ref="docs/errors.md#RLLM_011",
+        )
+    return content
 
 
 def _extract_usage(response: Any, prompt: str, content: str, elapsed_ms: float) -> UsageMetrics:
@@ -174,6 +185,16 @@ def _run_single(
     stack: tuple[str, ...],
     stats_store: StatsStore,
 ) -> dict[str, Any]:
+    if options.max_retries < 0:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="max_retries must be a non-negative integer.",
+            details={"max_retries": options.max_retries},
+            recovery_hint="Set max_retries to 0 or greater.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
     validate_json_schema_instance(instance=input_payload, schema=program.input_schema, phase="input")
 
     dep_outputs = _execute_uses(
@@ -268,7 +289,19 @@ def _run_single(
             )
             return out
         except RunLLMError as exc:
-            last_err = exc
+            if exc.payload.error_code in {"RLLM_005", "RLLM_006", "RLLM_007"}:
+                last_err = exc
+                continue
+            stats_store.record_run(
+                app_path=str(program.path),
+                app_name=program.name,
+                model=model,
+                success=False,
+                output_schema_ok=False,
+                input_schema_ok=True,
+                usage=usage,
+            )
+            raise
 
     assert last_err is not None
     stats_store.record_run(

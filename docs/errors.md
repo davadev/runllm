@@ -53,7 +53,7 @@ All runtime failures are emitted as structured JSON.
   - Fix: shrink input or raise `max_context_window`.
 
 - `RLLM_013` RetryExhaustedError
-  - Trigger: all retry attempts failed output validation.
+  - Trigger: all retry attempts failed output JSON/schema validation (`RLLM_005/006/007`).
   - Fix: improve `<<<RECOVERY>>>`, simplify schema, or switch model.
 
 - `RLLM_014` MissingProviderCredentialError

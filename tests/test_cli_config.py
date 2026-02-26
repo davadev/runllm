@@ -60,3 +60,29 @@ def test_help_works_even_with_bad_config_yaml(tmp_path, monkeypatch, capsys) -> 
 
     assert code == 0
     assert '"topic": "rllm"' in out
+
+
+def test_run_rejects_negative_max_retries(monkeypatch, capsys) -> None:
+    captured: dict[str, object] = {"called": False}
+
+    def fake_run_program(program_path, input_payload, options, **kwargs):
+        captured["called"] = True
+        return {"ok": True}
+
+    monkeypatch.setattr("runllm.cli.run_program", fake_run_program)
+
+    code = main(
+        [
+            "run",
+            "examples/summary.rllm",
+            "--input",
+            '{"text":"hello"}',
+            "--max-retries",
+            "-1",
+        ]
+    )
+    out = capsys.readouterr().out
+
+    assert code == 1
+    assert '"error_code": "RLLM_002"' in out
+    assert captured["called"] is False

@@ -125,6 +125,7 @@ Rules:
 
 - Child paths resolve relative to parent file.
 - Circular dependencies are rejected (`RLLM_008`).
+- `with` must be an object when provided.
 - `with` mapping values can be literals or templates.
 - Template values are rendered strings; use literals for typed non-strings.
 

@@ -11,7 +11,7 @@ from typing import Any
 import yaml
 
 from runllm.config import get_runtime_config, load_runtime_config
-from runllm.errors import RunLLMError
+from runllm.errors import RunLLMError, make_error
 from runllm.executor import estimate_execution_time_ms, run_program
 from runllm.models import RunOptions
 from runllm.parser import parse_rllm_file
@@ -273,6 +273,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     input_payload = _load_input(args)
     cfg = get_runtime_config()
     retries = args.max_retries if args.max_retries is not None else cfg.default_max_retries
+    if retries < 0:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="max_retries must be a non-negative integer.",
+            details={"max_retries": retries},
+            recovery_hint="Set --max-retries to 0 or greater.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
     model = args.model or cfg.default_model
     if args.ollama_auto_pull is None:
         ollama_auto_pull = cfg.default_ollama_auto_pull

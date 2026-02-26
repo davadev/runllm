@@ -122,6 +122,18 @@ def _validate_metadata(meta: dict[str, Any]) -> None:
                 recovery_hint=f"Provide {key} as a JSON/YAML object.",
                 doc_ref="docs/errors.md#RLLM_002",
             )
+
+    llm_model = meta["llm"].get("model")
+    if not isinstance(llm_model, str) or not llm_model.strip():
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="llm.model is required and must be a non-empty string.",
+            details={"llm": meta["llm"]},
+            recovery_hint="Set llm.model in .rllm frontmatter.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
     validate_litellm_params(meta["llm_params"])
 
 
@@ -157,12 +169,22 @@ def _parse_uses(path: Path, raw_uses: Any) -> list[UseSpec]:
                 recovery_hint="Add both name and path fields to uses entry.",
                 doc_ref="docs/errors.md#RLLM_008",
             )
+        with_map = item.get("with", {})
+        if not isinstance(with_map, dict):
+            raise make_error(
+                error_code="RLLM_008",
+                error_type="DependencyResolutionError",
+                message="uses.with must be an object when provided.",
+                details={"entry": item, "actual_type": type(with_map).__name__},
+                recovery_hint="Define uses.with as a mapping of child input keys to literals/templates.",
+                doc_ref="docs/errors.md#RLLM_008",
+            )
         dep_path = (path.parent / str(item["path"])).resolve()
         parsed.append(
             UseSpec(
                 name=str(item["name"]),
                 path=dep_path,
-                with_map=item.get("with", {}) if isinstance(item.get("with", {}), dict) else {},
+                with_map=with_map,
             )
         )
     return parsed

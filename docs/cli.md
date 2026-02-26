@@ -11,8 +11,8 @@ runllm [--no-config-autoload] run <file.rllm> [--input JSON] [--input-file path]
 Options:
 - `--input` inline JSON object string.
 - `--input-file` JSON/YAML file with top-level object.
-- `--model` override frontmatter `llm.model`.
-- `--max-retries` output-schema retry count (default: `2`).
+- `--model` override frontmatter `llm.model` at execution time (the frontmatter `llm.model` field is still required for validation).
+- `--max-retries` output-schema retry count, non-negative integer (default: `2`).
 - `--verbose` print verbose mode (reserved for richer traces).
 - `--ollama-auto-pull` allow `ollama pull` for missing models.
 - `--trusted-python` run python blocks with broad builtins.
