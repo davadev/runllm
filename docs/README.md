@@ -12,6 +12,7 @@ Repository planning:
 2. `rllm-spec.md`
 3. `schema-cookbook.md`
 4. `recovery-playbook.md`
+5. `multistep-apps.md`
 
 ## Building apps with coding agents
 
@@ -19,11 +20,13 @@ Repository planning:
 2. `rllm-spec.md`
 3. `schema-cookbook.md`
 4. `errors.md`
+5. `multistep-apps.md`
 
 ## Runtime usage and operations
 
 - `cli.md`
 - `composition.md`
+- `multistep-apps.md`
 - `ollama.md`
 - `global-install.md`
 - `provider-credentials.md`

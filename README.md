@@ -188,6 +188,7 @@ See `examples/`.
 - CLI reference: `docs/cli.md`
 - Error reference: `docs/errors.md`
 - Composition guide: `docs/composition.md`
+- Multi-step apps guide: `docs/multistep-apps.md`
 - Ollama guide: `docs/ollama.md`
 - Global install: `docs/global-install.md`
 - Provider credentials: `docs/provider-credentials.md`
