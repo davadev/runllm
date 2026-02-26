@@ -1,0 +1,24 @@
+# Documentation Index
+
+Start here based on your role.
+
+## Building apps manually
+
+1. `authoring-guide.md`
+2. `rllm-spec.md`
+3. `schema-cookbook.md`
+4. `recovery-playbook.md`
+
+## Building apps with coding agents
+
+1. `agent-scaffold-guide.md`
+2. `rllm-spec.md`
+3. `schema-cookbook.md`
+4. `errors.md`
+
+## Runtime usage and operations
+
+- `cli.md`
+- `composition.md`
+- `ollama.md`
+- `migration.md`

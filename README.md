@@ -127,12 +127,26 @@ See `examples/`.
 
 ## Project docs
 
+- Docs index: `docs/README.md`
 - `.rllm` format spec: `docs/rllm-spec.md`
+- Authoring guide: `docs/authoring-guide.md`
+- Agent scaffold guide: `docs/agent-scaffold-guide.md`
+- Schema cookbook: `docs/schema-cookbook.md`
+- Recovery playbook: `docs/recovery-playbook.md`
 - CLI reference: `docs/cli.md`
 - Error reference: `docs/errors.md`
 - Composition guide: `docs/composition.md`
 - Ollama guide: `docs/ollama.md`
 - Migration notes: `docs/migration.md`
+
+## For coding agents
+
+If you are building apps automatically, start in this order:
+
+1. `docs/agent-scaffold-guide.md`
+2. `docs/rllm-spec.md`
+3. `docs/schema-cookbook.md`
+4. `docs/recovery-playbook.md`
 
 ## Practical notes
 
