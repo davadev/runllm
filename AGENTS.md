@@ -119,6 +119,7 @@ Follow existing style in this codebase.
 - Prefer structured errors via `make_error(...)` and `RunLLMError`.
 - Include actionable `recovery_hint` whenever raising domain errors.
 - Preserve current error code taxonomy (`RLLM_00x`) and docs references.
+- Preserve compatibility error behavior for runtime bounds (`RLLM_015`) when touching parser metadata logic.
 - Do not swallow exceptions silently.
 
 ### Schema and Validation Practices
@@ -126,6 +127,7 @@ Follow existing style in this codebase.
 - Validate input before model execution.
 - Validate output schema after parsing model output.
 - Keep retry behavior deterministic and consistent with current executor flow.
+- Treat app `version` as app-owned versioning and `runllm_compat` as runtime-compatibility metadata.
 - If changing parsing behavior, update docs in the same change.
 
 ### CLI Behavior
@@ -162,6 +164,7 @@ Minimum docs to evaluate:
 - `docs/rllm-spec.md`
 - `docs/cli.md`
 - `docs/errors.md`
+- `docs/migration.md` (when compatibility/version behavior changes)
 - `docs/composition.md` (if `uses` behavior changed)
 
 ## Change Management Notes
