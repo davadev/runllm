@@ -51,50 +51,88 @@ This makes local and small-model workflows viable for many users, not only teams
 
 ## Install
 
-Recommended (global CLI, works from any directory):
+Choose one path:
+
+End users (recommended global CLI):
 
 ```bash
 pipx install runllm
 ```
 
-For local development in this repository:
+Contributors (editable install + tests):
 
 ```bash
-pip install -e .
+pip install -e .[dev]
 ```
 
-If you used `pip install --user`, make sure your user scripts path is on `PATH`.
-See `docs/global-install.md`.
+If you install with `pip install --user`, ensure your user scripts path is on `PATH`.
+See `docs/global-install.md` for platform-specific details.
 
-For provider API keys (OpenAI and others), see `docs/provider-credentials.md`.
-Autoload and precedence details are in `docs/configuration.md`.
+## Verify installation
 
-## Quickstart
+```bash
+runllm --help
+runllm help rllm --format json
+```
 
-Validate an app:
+If both commands work, CLI + agent-help output are ready.
+
+## Provider setup (quick)
+
+OpenAI example:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+```
+
+Ollama example:
+
+```bash
+ollama list
+```
+
+Config/autoload details:
+- `docs/provider-credentials.md`
+- `docs/configuration.md`
+- disable autoload per command with `--no-config-autoload`
+
+## Quickstart (2 minutes)
+
+1) Validate an app:
 
 ```bash
 runllm validate examples/summary.rllm
 ```
 
-Run an app:
-
-```bash
-runllm run examples/summary.rllm --input '{"text":"Large language models are useful."}'
-```
-
-Inspect metadata and schemas:
+2) Inspect app contract:
 
 ```bash
 runllm inspect examples/summary.rllm
 ```
 
-View stats and execution estimate:
+3) Run an app:
+
+```bash
+runllm run examples/summary.rllm --input '{"text":"Large language models are useful."}'
+```
+
+Expected: JSON output with a `summary` field.
+
+4) View stats and execution estimate:
 
 ```bash
 runllm stats examples/summary.rllm
 runllm exectime examples/compose_summary_keywords.rllm
 ```
+
+## Core commands
+
+- `runllm run <file.rllm> ...`
+- `runllm validate <file.rllm>`
+- `runllm inspect <file.rllm>`
+- `runllm stats <file.rllm> [--model ...]`
+- `runllm exectime <file.rllm> [--model ...]`
+- `runllm help <topic> [--format json|text]`
 
 ## Live local testing with Ollama
 
@@ -112,7 +150,7 @@ Run live Ollama integration tests:
 RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_examples_ollama_live.py
 ```
 
-These live tests validate schema compliance and structural correctness rather than exact text, because LLM text is non-deterministic.
+Live tests validate schema/structure (not exact phrasing), because model text is non-deterministic.
 
 ## Example apps
 
@@ -131,13 +169,12 @@ The repository includes diverse examples such as:
 
 See `examples/`.
 
-## Core commands
+## Troubleshooting first run
 
-- `runllm run <file.rllm> ...`
-- `runllm validate <file.rllm>`
-- `runllm inspect <file.rllm>`
-- `runllm stats <file.rllm> [--model ...]`
-- `runllm exectime <file.rllm> [--model ...]`
+- `command not found: runllm` -> check `docs/global-install.md` and your `PATH`.
+- `RLLM_014 MissingProviderCredentialError` -> set required provider env var.
+- broken local config parse -> run with `--no-config-autoload` and fix config file.
+- output schema failures -> inspect app schema (`runllm inspect`) and `docs/errors.md`.
 
 ## Project docs
 
@@ -161,10 +198,11 @@ See `examples/`.
 
 If you are building apps automatically, start in this order:
 
-1. `docs/agent-scaffold-guide.md`
-2. `docs/rllm-spec.md`
-3. `docs/schema-cookbook.md`
-4. `docs/recovery-playbook.md`
+1. `runllm help rllm --format json`
+2. `runllm help schema --format json`
+3. `runllm help recovery --format json`
+4. `runllm help examples --format json`
+5. `docs/agent-scaffold-guide.md`
 
 ## Practical notes
 
