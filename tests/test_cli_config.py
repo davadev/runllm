@@ -48,6 +48,32 @@ def test_no_config_autoload_is_passed_to_run(tmp_path, monkeypatch, capsys) -> N
     assert captured["autoload_config"] is False
 
 
+def test_python_memory_limit_is_passed_to_run_options(monkeypatch, capsys) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run_program(program_path, input_payload, options, **kwargs):
+        captured["python_memory_limit_mb"] = options.python_memory_limit_mb
+        return {"ok": True}
+
+    monkeypatch.setattr("runllm.cli.run_program", fake_run_program)
+
+    code = main(
+        [
+            "run",
+            "examples/summary.rllm",
+            "--input",
+            '{"text":"hello"}',
+            "--python-memory-limit-mb",
+            "512",
+        ]
+    )
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert '"ok": true' in out.lower()
+    assert captured["python_memory_limit_mb"] == 512
+
+
 def test_help_works_even_with_bad_config_yaml(tmp_path, monkeypatch, capsys) -> None:
     cfg_root = tmp_path / "config" / "runllm"
     cfg_root.mkdir(parents=True)
@@ -78,6 +104,32 @@ def test_run_rejects_negative_max_retries(monkeypatch, capsys) -> None:
             "--input",
             '{"text":"hello"}',
             "--max-retries",
+            "-1",
+        ]
+    )
+    out = capsys.readouterr().out
+
+    assert code == 1
+    assert '"error_code": "RLLM_002"' in out
+    assert captured["called"] is False
+
+
+def test_run_rejects_negative_python_memory_limit(monkeypatch, capsys) -> None:
+    captured: dict[str, object] = {"called": False}
+
+    def fake_run_program(program_path, input_payload, options, **kwargs):
+        captured["called"] = True
+        return {"ok": True}
+
+    monkeypatch.setattr("runllm.cli.run_program", fake_run_program)
+
+    code = main(
+        [
+            "run",
+            "examples/summary.rllm",
+            "--input",
+            '{"text":"hello"}',
+            "--python-memory-limit-mb",
             "-1",
         ]
     )

@@ -2,6 +2,13 @@
 
 Use these schema patterns to improve output compliance and reduce retries.
 
+Related docs:
+
+- Spec and required schema fields: `rllm-spec.md`
+- Prompt + contract workflow: `authoring-guide.md`
+- Retry/recovery tuning: `recovery-playbook.md`
+- Runtime schema error diagnostics: `errors.md`
+
 ## Classification
 
 ```yaml

@@ -2,6 +2,13 @@
 
 `runllm` delegates model calls to LiteLLM, so provider credentials are expected via environment variables.
 
+Related docs:
+
+- Config autoload precedence and disable controls: `configuration.md`
+- CLI usage and onboarding flags: `cli.md`, `onboarding.md`
+- Ollama-specific setup: `ollama.md`
+- Missing credential errors (`RLLM_014`): `errors.md`
+
 `runllm` now autoloads `.env` and config files by default. See `docs/configuration.md` for precedence and disable options.
 
 ## OpenAI setup

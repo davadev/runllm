@@ -2,6 +2,13 @@
 
 Use `<<<RECOVERY>>>` to improve schema compliance when first response fails.
 
+Related docs:
+
+- Prompt and authoring baseline: `authoring-guide.md`
+- Output schema design patterns: `schema-cookbook.md`
+- File format and `<<<RECOVERY>>>` syntax: `rllm-spec.md`
+- Error codes for retry failures: `errors.md`
+
 ## Principle
 
 Recovery should be short, direct, and schema-focused.

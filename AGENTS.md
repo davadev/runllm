@@ -170,3 +170,53 @@ Minimum docs to evaluate:
 - Do not introduce new dependencies unless necessary.
 - Match existing implementation patterns before inventing new abstractions.
 - Prefer incremental, test-backed edits.
+
+## LLM Contribution Workflow (Short)
+
+Use this branch strategy for all coding-agent changes.
+
+### Branches
+
+- `main`: always releasable; no direct agent commits unless explicitly requested.
+- `release/<major>.<minor>`: staging/stabilization branch for next release.
+- `feature/<name>`: new capability; branch from active `release/*` (or `main` if no release branch).
+- `bugfix/<name>`: non-urgent bug fix for upcoming release; branch from active `release/*`.
+- `hotfix/<name>`: urgent production fix; branch from `main`.
+
+### PR Targets
+
+- `feature/*` -> active `release/*`
+- `bugfix/*` -> active `release/*`
+- `hotfix/*` -> `main` first, then merge/cherry-pick into active `release/*`
+- Release completion: `release/*` -> `main`
+
+### Core Agent Rules
+
+- One logical change per branch/PR.
+- Keep commits atomic; use intent prefixes (`feat:`, `fix:`, `docs:`, `test:`).
+- Update docs in same change when behavior changes.
+- Add/update tests for changed behavior.
+- Never force-push protected branches (`main`, `release/*`).
+- Never amend pushed commits unless explicitly requested.
+- Never bypass hooks unless explicitly requested.
+- Never commit secrets (`.env`, API keys, credentials).
+- Do not revert unrelated user changes; only modify relevant scope.
+
+### Required Validation Before PR
+
+Run at minimum:
+
+- `python3 -m pytest -q`
+
+If release gate requires live tests, also run:
+
+- `RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_examples_ollama_live.py`
+- `RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_onboarding_ollama_live.py`
+
+### Release Steps (High-Level)
+
+1. Merge `feature/*` and `bugfix/*` into `release/*`.
+2. Stabilize (tests/docs/changelog).
+3. Merge `release/*` into `main`.
+4. Tag release on `main` (for example `v0.1.0`).
+5. Publish release notes.

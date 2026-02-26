@@ -33,6 +33,16 @@ Status: first stable baseline.
 - provider config autoload + credential checks
 - LLM-oriented CLI help topics (`runllm help ...`)
 
+### Release 1 MVP Parity Additions
+
+To preserve parity with MVP implementation scope, Release 1 also includes:
+
+- strict `llm_params` allowlist validation against supported LiteLLM params
+- structured JSON error payloads (`error_code`, `details`, `recovery_hint`, `doc_ref`)
+- context window estimation and enforcement against `max_context_window`
+- optional `rllm-python` pre/post blocks with restricted default mode and trusted override
+- Ollama missing-model handling with explicit opt-in auto-pull behavior
+
 ### Interactive Onboarding Workflow
 
 Release 1 must include one canonical stacked workflow that acts as onboarding.
@@ -87,6 +97,7 @@ A parent onboarding workflow composes these units with minimal orchestration.
 - Onboarding has both paths tested:
   - missing credentials
   - credentials already present
+- Core runtime integration tests cover retries, composition, contracts, and structured failures.
 - Documentation includes copy-paste onboarding sequence.
 
 ---
@@ -138,6 +149,91 @@ Output must remain deterministic enough for agents to navigate reliably.
 
 ---
 
+## Release 3: Public Packaging + Rename to ModuLLM (v0.3.x)
+
+Status: planned.
+
+### Objectives
+
+- Make the project installable through standard Python tooling for broad adoption.
+- Rename project identity from `runllm` to `ModuLLM` to avoid naming conflicts in public ecosystems.
+- Preserve continuity for existing users with a documented migration path.
+
+### Distribution and Packaging Scope
+
+- Publish distributable artifacts (`sdist` + `wheel`) for public installation.
+- Support installation paths:
+  - `pip install modullm`
+  - `pipx install modullm`
+  - editable install for contributors
+- Verify CLI entrypoint behavior after installation in clean environments.
+- Keep library + CLI behavior aligned across install methods.
+
+### Rename and Migration Scope
+
+- Update project/package/CLI branding to `ModuLLM`.
+- Provide command migration guidance (`runllm` -> `modullm`).
+- Provide package migration guidance for scripts, CI, and docs.
+- Prefer a transition window with compatibility notices before full cutover.
+
+### Release 3 Exit Criteria
+
+- Users can install and run the tool via Python package tooling without local checkout.
+- Public naming consistently uses `ModuLLM`.
+- Migration guidance is published and validated with smoke tests.
+- Core command behavior remains stable (`validate`, `inspect`, `run`, `stats`, `help`).
+
+---
+
+## Release 4: Security Hardening + AuthZ and Prompt-Containment (v0.4.x)
+
+Status: planned.
+
+### Objectives
+
+- Establish authenticated user execution controls (not only provider API credentials).
+- Enforce policy-based authorization for which users can run which `.rllm` programs.
+- Prevent unauthorized cross-system data transfer in stacked workflows and MCP contexts.
+- Reduce prompt-injection blast radius with capability and data-flow constraints.
+
+### Identity, Authorization, and Capability Model
+
+- Introduce authenticated runtime principal context (user/session/tenant/role).
+- Add app-level authorization policies with default-deny behavior.
+- Mint per-run least-privilege capabilities and delegate only explicit subsets to `uses` children.
+- Block privilege escalation and unauthorized transitive delegation.
+
+### Data Domain and Flow Controls
+
+- Classify apps/tools/outputs by domain (for example: support, finance, hr, security).
+- Enforce explicit flow policy matrix between domains.
+- Deny cross-domain transfer by default unless explicitly allowed by policy.
+- Add safeguards for "user may access both systems, but transfer between them is not permitted."
+
+### MCP and Prompt-Injection Guardrails
+
+- Add MCP policy gateway for discovery/invoke filtering by principal capabilities.
+- Treat model output and tool instructions as untrusted input.
+- Require policy checks before every tool invocation and before sensitive output egress.
+- Add output egress guardrails (redaction/blocking) when policy forbids transfer.
+- Add high-risk action gating for export/exfiltration-like operations.
+
+### Auditability and Operations
+
+- Produce structured allow/deny decision logs with policy reasons.
+- Record domain-flow events for security review and compliance.
+- Add incident-response and disclosure workflow to documentation.
+
+### Release 4 Exit Criteria
+
+- Unauthorized program execution is denied with structured policy errors.
+- Cross-domain transfer is blocked by default and only allowed by explicit policy.
+- `uses` chains cannot escalate privileges or bypass domain boundaries.
+- Red-team prompt-injection tests validate containment and no unauthorized exfiltration.
+- Security checks and policy tests are integrated into CI release gates.
+
+---
+
 ## Cross-Release Quality Gates
 
 For every release:
@@ -154,3 +250,5 @@ For every release:
 
 - `v0.1.x`: core runtime + interactive onboarding builder.
 - `v0.2.x`: MCP integration + categorized tool discovery.
+- `v0.3.x`: packaging for Python tooling + rename to `ModuLLM`.
+- `v0.4.x`: security hardening + authorization and prompt-containment controls.

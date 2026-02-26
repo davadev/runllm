@@ -2,6 +2,14 @@
 
 This guide helps you design `.rllm` apps that are easy for humans and coding agents to scaffold.
 
+Related docs:
+
+- Canonical format reference: `rllm-spec.md`
+- Reusable schema shapes: `schema-cookbook.md`
+- Recovery strategy: `recovery-playbook.md`
+- Multi-step composition patterns: `multistep-apps.md`
+- Agent-focused generation rules: `agent-scaffold-guide.md`
+
 ## Design workflow
 
 1. Define `input_schema` first.

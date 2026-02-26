@@ -2,6 +2,15 @@
 
 This document is the canonical file-format reference for `.rllm` apps.
 
+Related docs:
+
+- Authoring workflow: `authoring-guide.md`
+- Schema patterns: `schema-cookbook.md`
+- Recovery prompt design: `recovery-playbook.md`
+- Composition details: `composition.md`
+- CLI command usage: `cli.md`
+- Error codes: `errors.md`
+
 ## File shape
 
 `.rllm` files are plain text with YAML frontmatter and a prompt body.
@@ -156,6 +165,7 @@ Contract:
 - Runtime injects `context` dict.
 - Block should set `result` as dict (or leave empty).
 - In default mode, builtins are restricted and execution is time-limited.
+- Untrusted mode also applies a best-effort memory cap (default `256 MB`, configurable via `--python-memory-limit-mb`; use `0` to disable).
 - `--trusted-python` enables broader execution.
 
 ## JSON output parsing behavior

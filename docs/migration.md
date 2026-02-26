@@ -1,5 +1,12 @@
 # Versioning and Migration
 
+Related docs:
+
+- Release planning and milestones: `../ROADMAP.md`
+- Release execution workflow: `release-process.md`
+- Runtime command behavior: `cli.md`
+- Format compatibility source of truth: `rllm-spec.md`
+
 Current `.rllm` spec version: `0.1`.
 
 Compatibility rules:

@@ -41,6 +41,7 @@ class RunOptions:
     verbose: bool = False
     ollama_auto_pull: bool = False
     trusted_python: bool = False
+    python_memory_limit_mb: int = 256
 
 
 @dataclass

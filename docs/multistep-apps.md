@@ -2,6 +2,14 @@
 
 Build multi-step `.rllm` workflows by composing child apps with `uses` and adding deterministic transforms with optional `rllm-python` blocks.
 
+Related docs:
+
+- Base composition contract: `composition.md`
+- Canonical `.rllm` syntax and optional python blocks: `rllm-spec.md`
+- Prompt/recovery writing guidance: `authoring-guide.md`, `recovery-playbook.md`
+- Runtime command workflow: `cli.md`
+- Failure diagnostics: `errors.md`
+
 This guide is written for both:
 
 - Humans authoring apps manually.

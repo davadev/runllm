@@ -2,6 +2,15 @@
 
 This file is written for coding LLM agents that generate `.rllm` apps.
 
+Related docs:
+
+- Canonical schema/metadata rules: `rllm-spec.md`
+- Proven authoring workflow: `authoring-guide.md`
+- Reusable output schema patterns: `schema-cookbook.md`
+- Retry prompt patterns: `recovery-playbook.md`
+- Composition and multi-step scaffolding: `composition.md`, `multistep-apps.md`
+- Runtime and failures: `cli.md`, `errors.md`
+
 ## Objective
 
 Given a user request, produce a valid `.rllm` file that passes:

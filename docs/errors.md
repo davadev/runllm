@@ -2,6 +2,14 @@
 
 All runtime failures are emitted as structured JSON.
 
+Related docs:
+
+- CLI behavior and exit codes: `cli.md`
+- Core format and metadata validation rules: `rllm-spec.md`
+- Schema design to reduce validation failures: `schema-cookbook.md`
+- Recovery prompt strategy for `RLLM_005/006/007/013`: `recovery-playbook.md`
+- Dependency debugging context: `composition.md`
+
 ## Error catalog
 
 - `RLLM_001` ParseError
@@ -37,7 +45,7 @@ All runtime failures are emitted as structured JSON.
   - Fix: validate `uses` structure and break circular references.
 
 - `RLLM_009` PythonBlockExecutionError
-  - Trigger: python block exception/timeout/non-dict result.
+  - Trigger: python block exception/timeout/non-dict result/memory-limit failure.
   - Fix: keep block deterministic, short, and assign `result` as object.
 
 - `RLLM_010` OllamaModelMissingError

@@ -2,6 +2,14 @@
 
 Use `uses` in frontmatter to call child `.rllm` apps before parent prompt execution.
 
+Related docs:
+
+- Full multi-step architecture examples: `multistep-apps.md`
+- File format details for `uses`: `rllm-spec.md`
+- Authoring workflow and contract-first setup: `authoring-guide.md`
+- CLI validation/inspection commands: `cli.md`
+- Dependency and schema error codes: `errors.md`
+
 Composition is function-like:
 
 - Parent defines child calls.

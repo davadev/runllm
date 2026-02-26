@@ -213,6 +213,7 @@ def _run_single(
             context,
             block_name="pre",
             trusted=options.trusted_python,
+            memory_limit_mb=options.python_memory_limit_mb,
         )
         context.update(pre)
 
@@ -275,6 +276,7 @@ def _run_single(
                     {"input": input_payload, "output": out, "uses": dep_outputs},
                     block_name="post",
                     trusted=options.trusted_python,
+                    memory_limit_mb=options.python_memory_limit_mb,
                 )
                 if post:
                     out.update(post)

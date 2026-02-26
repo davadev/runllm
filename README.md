@@ -197,6 +197,7 @@ See `examples/`.
 
 ## Project docs
 
+- Changelog: `CHANGELOG.md`
 - Project roadmap: `ROADMAP.md`
 - Docs index: `docs/README.md`
 - `.rllm` format spec: `docs/rllm-spec.md`
@@ -213,6 +214,7 @@ See `examples/`.
 - Global install: `docs/global-install.md`
 - Provider credentials: `docs/provider-credentials.md`
 - Configuration and autoload: `docs/configuration.md`
+- Release process: `docs/release-process.md`
 - Migration notes: `docs/migration.md`
 
 ## For coding agents

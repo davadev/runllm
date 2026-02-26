@@ -2,6 +2,13 @@
 
 `runllm` supports automatic loading of provider settings and runtime defaults.
 
+Related docs:
+
+- Provider credential setup: `provider-credentials.md`
+- Runtime commands and global flags: `cli.md`
+- First-run guided setup: `onboarding.md`
+- Compatibility and migration notes: `migration.md`
+
 ## Autoload behavior
 
 By default, `runllm` autoloads configuration in this precedence order (highest first):

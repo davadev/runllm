@@ -2,6 +2,13 @@
 
 Goal: make `runllm` executable from any directory.
 
+Related docs:
+
+- Main quickstart and project overview: `../README.md`
+- Command reference after install: `cli.md`
+- Provider credentials for first real run: `provider-credentials.md`
+- Guided first app flow: `onboarding.md`
+
 ## Recommended
 
 Use `pipx`, which installs CLI tools in isolated environments and exposes commands globally.

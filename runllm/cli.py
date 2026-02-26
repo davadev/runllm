@@ -283,6 +283,16 @@ def cmd_run(args: argparse.Namespace) -> int:
             recovery_hint="Set --max-retries to 0 or greater.",
             doc_ref="docs/errors.md#RLLM_002",
         )
+    python_memory_limit_mb = args.python_memory_limit_mb
+    if python_memory_limit_mb < 0:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="python_memory_limit_mb must be a non-negative integer.",
+            details={"python_memory_limit_mb": python_memory_limit_mb},
+            recovery_hint="Set --python-memory-limit-mb to 0 or greater.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
     model = args.model or cfg.default_model
     if args.ollama_auto_pull is None:
         ollama_auto_pull = cfg.default_ollama_auto_pull
@@ -294,6 +304,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         verbose=args.verbose,
         ollama_auto_pull=ollama_auto_pull,
         trusted_python=args.trusted_python,
+        python_memory_limit_mb=python_memory_limit_mb,
     )
     output = run_program(
         args.file,
@@ -402,6 +413,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--trusted-python",
         action="store_true",
         help="Run python blocks with unrestricted builtins (unsafe)",
+    )
+    run_p.add_argument(
+        "--python-memory-limit-mb",
+        metavar="MB",
+        type=int,
+        default=256,
+        help="Memory cap for untrusted python blocks; set 0 to disable",
     )
     run_p.set_defaults(func=cmd_run)
 

@@ -2,6 +2,13 @@
 
 If app model is `ollama/<model>`, runllm can verify local model availability.
 
+Related docs:
+
+- Command flags and runtime usage: `cli.md`
+- Provider setup and env variables: `provider-credentials.md`, `configuration.md`
+- Recommended model metadata fields: `rllm-spec.md`
+- Missing-model error details (`RLLM_010`): `errors.md`
+
 Examples:
 - `ollama/llama3.1:8b`
 - `ollama/qwen2.5-coder:7b`
