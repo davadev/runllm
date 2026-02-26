@@ -7,6 +7,7 @@ from typing import Any
 
 from runllm.errors import RunLLMError
 from runllm.executor import run_program
+from runllm.help_content import HELP_TOPICS, help_topics_json, help_topics_text
 from runllm.mcp_registry import (
     build_registry,
     list_programs_from_entries,
@@ -94,6 +95,30 @@ async def serve_mcp(
                         },
                     },
                     "required": ["id", "input"],
+                },
+            ),
+            Tool(
+                name="help_topic",
+                description=(
+                    "Return runllm authoring reference content for one topic. "
+                    "Use this before scaffolding new .rllm apps."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "topic": {
+                            "type": "string",
+                            "description": "Help topic name.",
+                            "enum": list(HELP_TOPICS),
+                        },
+                        "format": {
+                            "type": "string",
+                            "description": "Response format.",
+                            "enum": ["json", "text"],
+                            "default": "json",
+                        },
+                    },
+                    "required": ["topic"],
                 },
             ),
         ]
@@ -312,6 +337,68 @@ async def serve_mcp(
                 )
                 return _ok_payload(project=project, id=program_id, result=result)
 
+            if name == "help_topic":
+                raw_topic = args.get("topic")
+                if not isinstance(raw_topic, str):
+                    return _err_payload(
+                        {
+                            "error_code": "RLLM_002",
+                            "error_type": "MetadataValidationError",
+                            "message": "help_topic topic must be a string.",
+                            "details": {"topic_type": type(raw_topic).__name__},
+                            "expected_schema": None,
+                            "received_payload": arguments,
+                            "recovery_hint": f"Pass one of: {', '.join(HELP_TOPICS)}.",
+                            "doc_ref": "docs/errors.md#RLLM_002",
+                        }
+                    )
+                topic = raw_topic.strip()
+                if topic not in HELP_TOPICS:
+                    return _err_payload(
+                        {
+                            "error_code": "RLLM_002",
+                            "error_type": "MetadataValidationError",
+                            "message": "help_topic topic is not supported.",
+                            "details": {"topic": topic, "supported_topics": list(HELP_TOPICS)},
+                            "expected_schema": None,
+                            "received_payload": arguments,
+                            "recovery_hint": f"Pass one of: {', '.join(HELP_TOPICS)}.",
+                            "doc_ref": "docs/errors.md#RLLM_002",
+                        }
+                    )
+                raw_format = args.get("format", "json")
+                if not isinstance(raw_format, str):
+                    return _err_payload(
+                        {
+                            "error_code": "RLLM_002",
+                            "error_type": "MetadataValidationError",
+                            "message": "help_topic format must be a string.",
+                            "details": {"format_type": type(raw_format).__name__},
+                            "expected_schema": None,
+                            "received_payload": arguments,
+                            "recovery_hint": "Use format 'json' or 'text'.",
+                            "doc_ref": "docs/errors.md#RLLM_002",
+                        }
+                    )
+                render_format = raw_format.strip().lower()
+                if render_format not in {"json", "text"}:
+                    return _err_payload(
+                        {
+                            "error_code": "RLLM_002",
+                            "error_type": "MetadataValidationError",
+                            "message": "help_topic format must be 'json' or 'text'.",
+                            "details": {"format": raw_format},
+                            "expected_schema": None,
+                            "received_payload": arguments,
+                            "recovery_hint": "Use format 'json' or 'text'.",
+                            "doc_ref": "docs/errors.md#RLLM_002",
+                        }
+                    )
+
+                if render_format == "json":
+                    return _ok_payload(topic=topic, format="json", content=help_topics_json()[topic])
+                return _ok_payload(topic=topic, format="text", content=help_topics_text()[topic])
+
             return _err_payload(
                 {
                     "error_code": "RLLM_999",
@@ -320,7 +407,7 @@ async def serve_mcp(
                     "details": {"tool": name},
                     "expected_schema": None,
                     "received_payload": arguments,
-                    "recovery_hint": "Use list_programs or invoke_program.",
+                    "recovery_hint": "Use list_programs, invoke_program, or help_topic.",
                     "doc_ref": "docs/errors.md#RLLM_999",
                 }
             )

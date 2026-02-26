@@ -152,13 +152,15 @@ runllm exectime examples/compose_summary_keywords.rllm
 - `runllm exectime <file.rllm> [--model ...]`
 - `runllm help <topic> [--format json|text]`
 - `runllm mcp serve --project <name>`
+- `runllm mcp install-opencode [--project <name>]`
 
 ## MCP (project-scoped)
 
-`runllm` can expose apps over MCP with a minimal 2-tool interface:
+`runllm` can expose apps over MCP with a minimal 3-tool interface:
 
 - `list_programs`
 - `invoke_program`
+- `help_topic`
 
 Project scope is inferred from directory layout:
 
@@ -172,6 +174,14 @@ runllm mcp serve --project runllm
 ```
 
 By default, program index is loaded at server start. Use MCP `list_programs` with `refresh: true` to reload newly added/edited apps without restarting.
+
+Install into OpenCode config automatically:
+
+```bash
+runllm mcp install-opencode --project runllm
+```
+
+This writes OpenCode `opencode.json` MCP entry and creates `agent/runllm-rllm-builder.md`.
 
 ## Live local testing with Ollama
 

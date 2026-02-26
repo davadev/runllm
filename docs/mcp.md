@@ -41,6 +41,27 @@ runllm mcp serve --project billing
 runllm mcp serve --project rllmlib
 ```
 
+## OpenCode auto-install
+
+To auto-add `runllm` MCP into OpenCode config and create a dedicated builder agent:
+
+```bash
+runllm mcp install-opencode --project runllm
+```
+
+This command:
+
+- writes/updates `opencode.json` in `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
+- upserts `mcp.runllm` with command:
+  - `runllm mcp serve --project <project>`
+- creates `agent/runllm-rllm-builder.md` with instructions for using `help_topic`, `list_programs`, and `invoke_program` to build `.rllm` apps
+
+Safety behavior:
+
+- preserves existing `mcp.runllm` values unless fields are missing
+- does not overwrite existing agent file content by default
+- pass `--force` to overwrite both
+
 Registry behavior:
 
 - program registry is indexed once at server startup
@@ -59,14 +80,20 @@ Registry behavior:
 - `invoke_program`
   - required inputs: `id`, `input`
   - runs one scoped app with JSON input
+- `help_topic`
+  - required input: `topic`
+  - optional input: `format` (`json` default, or `text`)
+  - returns canonical runllm authoring guidance for topic:
+    - `rllm`, `schema`, `recovery`, `examples`, `credentials`, `config`
 
 ## Agent-friendly flow
 
-1. Call `list_programs` with optional `query`.
-2. Pick one id from returned cards.
-3. Call `invoke_program` with the card's `invocation_template` adapted to task data.
+1. Call `help_topic` for `rllm`, `schema`, and `recovery`.
+2. Call `list_programs` with optional `query`.
+3. Pick one id from returned cards.
+4. Call `invoke_program` with the card's `invocation_template` adapted to task data.
 
-This keeps discovery flat and usually completes in 2 MCP calls.
+This keeps discovery flat and usually completes in 3 MCP calls.
 
 Refresh behavior:
 

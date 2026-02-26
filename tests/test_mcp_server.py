@@ -388,3 +388,55 @@ def test_mcp_invoke_program_auto_refreshes_on_id_miss(monkeypatch, tmp_path: Pat
     assert is_error is False
     assert payload["ok"] is True
     assert payload["id"] == program_id
+
+
+def test_mcp_help_topic_returns_json_content(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("help_topic", {"topic": "rllm"}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["topic"] == "rllm"
+    assert payload["format"] == "json"
+    assert "required_fields" in payload["content"]
+
+
+def test_mcp_help_topic_supports_text_format(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("help_topic", {"topic": "schema", "format": "text"}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["topic"] == "schema"
+    assert payload["format"] == "text"
+    assert "JSON Schema guidance" in payload["content"]
+
+
+def test_mcp_help_topic_rejects_unknown_topic(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("help_topic", {"topic": "nope"}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is True
+    assert payload["ok"] is False
+    assert payload["error"]["error_code"] == "RLLM_002"
+
+
+def test_mcp_help_topic_rejects_invalid_format(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("help_topic", {"topic": "rllm", "format": "xml"}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is True
+    assert payload["ok"] is False
+    assert payload["error"]["error_code"] == "RLLM_002"
