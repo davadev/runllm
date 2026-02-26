@@ -62,12 +62,17 @@ This repo does not currently define dedicated lint or formatter tools in `pyproj
   - `python3 -m runllm.cli inspect examples/summary.rllm`
 - Show stats:
   - `python3 -m runllm.cli stats examples/summary.rllm`
+- Show MCP command help:
+  - `python3 -m runllm.cli mcp serve --help`
 
 ## Repository Layout
 
 - Source package: `runllm/`
 - Tests: `tests/`
 - Example apps: `examples/`
+- User app libraries for MCP discovery:
+  - `userlib/<project_name>/**/*.rllm`
+  - `rllmlib/**/*.rllm` (project name `rllmlib`)
 - Project docs: `docs/`
 
 Key implementation files:
@@ -78,6 +83,8 @@ Key implementation files:
 - `runllm/validation.py` JSON parsing and JSON Schema validation
 - `runllm/errors.py` structured error payload helpers
 - `runllm/stats.py` SQLite stats storage and aggregation
+- `runllm/mcp_server.py` MCP stdio server and tool handlers
+- `runllm/mcp_registry.py` MCP app discovery/indexing and contract summary generation
 
 ## Code Style Guidelines
 
@@ -178,6 +185,8 @@ Minimum docs to evaluate:
 
 Use this branch strategy for all coding-agent changes.
 
+Current active release branch: `release/0.2`
+
 ### Branches
 
 - `main`: always releasable; no direct agent commits unless explicitly requested.
@@ -223,3 +232,4 @@ If release gate requires live tests, also run:
 3. Merge `release/*` into `main`.
 4. Tag release on `main` (for example `v0.1.0`).
 5. Publish release notes.
+6. Create next release branch (for example `release/0.2`) and update this file's "Current active release branch" entry in the same release operation.

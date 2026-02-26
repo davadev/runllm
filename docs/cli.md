@@ -7,6 +7,7 @@ Related docs:
 - Provider credentials and config autoload: `provider-credentials.md`, `configuration.md`
 - Error payload reference: `errors.md`
 - Composition patterns: `composition.md`, `multistep-apps.md`
+- MCP usage and project scoping: `mcp.md`
 
 ## `runllm run`
 
@@ -140,10 +141,34 @@ Scaffold options:
 - `--scaffold-file` custom scaffold output path (default: `.runllm/scaffold-profile.json`)
 - `--no-save-scaffold` opt out of writing scaffold profile file
 
+## `runllm mcp serve`
+
+Start minimal MCP stdio server for one project scope.
+
+```bash
+runllm mcp serve --project <name>
+```
+
+Behavior:
+- serves only two tools: `list_programs`, `invoke_program`
+- scope is fixed to one project per process
+- programs are discovered from:
+  - `userlib/<project>/**/*.rllm`
+  - `rllmlib/**/*.rllm` (project name: `rllmlib`)
+- `list_programs` returns compact contract hints (required params and returns with types)
+
+Examples:
+
+```bash
+runllm mcp serve --project runllm
+runllm mcp serve --project rllmlib
+```
+
 ## Exit behavior
 
 - Success returns exit code `0` and JSON output payload.
 - Validation/runtime failure returns exit code `1` and structured error JSON (see `docs/errors.md`).
+- Exception: `runllm mcp serve` is a long-running stdio server command; it does not emit one-shot JSON command payloads.
 
 ## Provider credentials
 

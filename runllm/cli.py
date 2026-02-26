@@ -366,6 +366,23 @@ def cmd_exectime(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mcp_serve(args: argparse.Namespace) -> int:
+    project = str(args.project).strip()
+    if not project:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="project must be a non-empty string.",
+            details={"project": args.project},
+            recovery_hint="Pass --project with a non-empty value.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+    from runllm.mcp_server import run_mcp_server
+
+    run_mcp_server(project=project, autoload_config=getattr(args, "_autoload_config", None))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="runllm",
@@ -392,7 +409,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(
         dest="command",
         required=True,
-        metavar="{run,validate,inspect,stats,exectime,onboard,help}",
+        metavar="{run,validate,inspect,stats,exectime,onboard,help,mcp}",
     )
 
     run_p = sub.add_parser(
@@ -513,6 +530,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format for help topic",
     )
     h_p.set_defaults(func=cmd_help)
+
+    m_p = sub.add_parser(
+        "mcp",
+        help="Run minimal MCP server",
+        description="Serve runllm apps over MCP with project-scoped discovery and invocation.",
+        formatter_class=_HelpFormatter,
+    )
+    m_sub = m_p.add_subparsers(dest="mcp_command", required=True, metavar="{serve}")
+    m_serve = m_sub.add_parser(
+        "serve",
+        help="Serve MCP tools for one project",
+        description="Start MCP stdio server exposing list_programs and invoke_program for one project scope.",
+        formatter_class=_HelpFormatter,
+    )
+    m_serve.add_argument(
+        "--project",
+        metavar="NAME",
+        required=True,
+        help="Project scope name (userlib/<project> or rllmlib).",
+    )
+    m_serve.set_defaults(func=cmd_mcp_serve)
 
     return parser
 

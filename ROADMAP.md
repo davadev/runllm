@@ -115,12 +115,22 @@ Status: planned.
 ### MCP Scope
 
 - MCP server integration for runllm program registry.
-- Operations:
-  - list categories
-  - list programs in category
-  - inspect program contract/metadata
-  - get invocation hints
-- Discovery should default to compact tree output.
+- Minimal operations (agent-first):
+  - list programs
+  - invoke program
+- Listing payload must include:
+  - app description
+  - auto-generated required input parameters with type hints
+  - auto-generated output fields with type hints
+- Keep discovery flat and compact to reduce round trips.
+
+### Project-scoped discovery
+
+- No project metadata field required in `.rllm` frontmatter.
+- Infer project from directories:
+  - `userlib/<project_name>/**/*.rllm`
+  - `rllmlib/**/*.rllm` (treated as project `rllmlib`)
+- MCP server should run with fixed `--project` scope so agents only see one project catalog.
 
 ### LLM-assisted organization
 
@@ -135,15 +145,15 @@ Output must remain deterministic enough for agents to navigate reliably.
 
 ### Context-window safety requirements
 
-- top-level MCP listing returns categories only
-- detailed expansion is on demand
+- single listing call should usually be enough to select a candidate app
 - pagination/filtering for large app libraries
-- compact metadata summaries for each node
+- compact metadata summaries with contract hints
+- avoid deep category/tree traversal by default
 
 ### Release 2 Exit Criteria
 
-- Agent can discover relevant apps through category tree without context bloat.
-- MCP discovery/inspect/invoke flow has integration tests.
+- Agent can discover relevant apps in one compact listing call without context bloat.
+- MCP list/invoke flow has integration tests.
 - Non-MCP workflows remain backward compatible.
 - Docs include setup, usage, and failure handling guidance.
 
@@ -249,6 +259,6 @@ For every release:
 ## Versioning Path
 
 - `v0.1.x`: core runtime + interactive onboarding builder.
-- `v0.2.x`: MCP integration + categorized tool discovery.
+- `v0.2.x`: MCP integration + project-scoped flat discovery.
 - `v0.3.x`: packaging for Python tooling + rename to `ModuLLM`.
 - `v0.4.x`: security hardening + authorization and prompt-containment controls.

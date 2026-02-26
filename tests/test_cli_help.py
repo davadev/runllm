@@ -74,3 +74,13 @@ def test_onboard_help_describes_resume_flags(capsys) -> None:
     assert "--session-file" in out
     assert "--scaffold-file" in out
     assert "--no-save-scaffold" in out
+
+
+def test_mcp_help_describes_project_scope(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["mcp", "serve", "--help"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "list_programs" in out
+    assert "--project" in out

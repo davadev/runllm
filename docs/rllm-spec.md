@@ -198,3 +198,12 @@ Runtime expects a JSON object.
 
 Before model call, runtime estimates total context tokens from prompt + input.
 If estimate exceeds `max_context_window`, run fails with `RLLM_012`.
+
+## MCP project inference (v0.2)
+
+For MCP discovery, project scope is inferred from file paths, not frontmatter metadata.
+
+- `userlib/<project_name>/**/*.rllm` -> project = `<project_name>`
+- `rllmlib/**/*.rllm` -> project = `rllmlib`
+
+`userlib/*.rllm` files are not indexed by MCP.

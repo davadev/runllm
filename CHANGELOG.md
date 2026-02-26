@@ -6,7 +6,19 @@ The format is inspired by Keep a Changelog and this project follows Semantic Ver
 
 ## [Unreleased]
 
-- No changes yet.
+### Added
+
+- Minimal MCP server command: `runllm mcp serve --project <name>`.
+- Project-scoped MCP tool surface with two tools only: `list_programs` and `invoke_program`.
+- MCP program registry over `userlib/<project>/**/*.rllm` and `rllmlib/**/*.rllm`.
+- Flat discovery cards that include app description, required input parameters with type hints, output fields with type hints, and invocation templates.
+- Registry and pagination tests for project inference and contract-summary generation.
+- MCP protocol-level error signaling (`isError`) with structured `runllm` error payloads for validation/runtime failures.
+- MCP invoke behavior aligned with runtime config defaults by delegating `RunOptions` construction to core runtime.
+- Recursive invocation template placeholders for required nested object fields and constrained arrays.
+- Array placeholder cap for large `minItems` schemas to keep discovery payloads compact.
+- MCP registry is built once per server session to reduce repeated filesystem/parse overhead.
+- Expanded MCP regression coverage in `tests/test_mcp_server.py` for validation, scoping, error paths, and autoload behavior.
 
 ## [0.1.0] - 2026-02-26
 

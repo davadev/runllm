@@ -178,3 +178,21 @@ def test_no_config_autoload_is_passed_to_onboard_runs(tmp_path, monkeypatch, cap
     assert '"ok": true' in out.lower()
     assert len(captured) >= 2
     assert all(value is False for value in captured)
+
+
+def test_no_config_autoload_is_passed_to_mcp_serve(monkeypatch) -> None:
+    reset_runtime_config_for_tests()
+
+    captured: dict[str, object] = {}
+
+    def fake_run_mcp_server(*, project: str, autoload_config: bool | None = None, **kwargs) -> None:
+        captured["project"] = project
+        captured["autoload_config"] = autoload_config
+
+    monkeypatch.setattr("runllm.mcp_server.run_mcp_server", fake_run_mcp_server)
+
+    code = main(["--no-config-autoload", "mcp", "serve", "--project", "billing"])
+
+    assert code == 0
+    assert captured["project"] == "billing"
+    assert captured["autoload_config"] is False
