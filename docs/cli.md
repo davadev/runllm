@@ -5,7 +5,7 @@
 Execute a `.rllm` app.
 
 ```bash
-runllm run <file.rllm> [--input JSON] [--input-file path] [--model model] [--max-retries N] [--verbose] [--ollama-auto-pull] [--trusted-python]
+runllm [--no-config-autoload] run <file.rllm> [--input JSON] [--input-file path] [--model model] [--max-retries N] [--verbose] [--ollama-auto-pull] [--trusted-python]
 ```
 
 Options:
@@ -16,6 +16,9 @@ Options:
 - `--verbose` print verbose mode (reserved for richer traces).
 - `--ollama-auto-pull` allow `ollama pull` for missing models.
 - `--trusted-python` run python blocks with broad builtins.
+
+Global options:
+- `--no-config-autoload` disable automatic loading of `.env` and config files.
 
 Example:
 
@@ -76,3 +79,8 @@ Returns estimated latency from observed averages of parent + direct dependencies
 
 - Success returns exit code `0` and JSON output payload.
 - Validation/runtime failure returns exit code `1` and structured error JSON (see `docs/errors.md`).
+
+## Provider credentials
+
+`runllm` uses LiteLLM providers. Configure credentials via environment variables (for example `OPENAI_API_KEY`).
+See `docs/provider-credentials.md` and `docs/configuration.md`.

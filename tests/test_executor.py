@@ -22,6 +22,7 @@ class FakeCompletion:
 
 def test_retry_then_success(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     app = Path("examples/summary.rllm").resolve()
     fake = FakeCompletion(["not json", '{"summary":"ok"}'])
     out = run_program(
@@ -35,6 +36,7 @@ def test_retry_then_success(tmp_path: Path, monkeypatch) -> None:
 
 def test_composition(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     app = Path("examples/compose_summary_keywords.rllm").resolve()
     fake = FakeCompletion(
         [

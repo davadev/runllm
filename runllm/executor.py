@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
 
+from runllm.config import get_runtime_config, load_runtime_config, required_provider_key
 from runllm.errors import RunLLMError, make_error
 from runllm.models import RLLMProgram, RunOptions, UsageMetrics
 from runllm.ollama import ensure_ollama_model
@@ -67,6 +69,29 @@ def _prepare_model(program: RLLMProgram, options: RunOptions) -> str:
             doc_ref="docs/errors.md#RLLM_002",
         )
     return model
+
+
+def _ensure_provider_credentials(model: str) -> None:
+    required = required_provider_key(model)
+    if required is None:
+        return
+    provider, key_name = required
+    if os.environ.get(key_name):
+        return
+    cfg = get_runtime_config()
+    raise make_error(
+        error_code="RLLM_014",
+        error_type="MissingProviderCredentialError",
+        message="Provider credential is missing for selected model.",
+        details={
+            "provider": provider,
+            "missing_env_var": key_name,
+            "model": model,
+            "checked_sources": cfg.loaded_sources or [],
+        },
+        recovery_hint=f"Set {key_name} in environment or .env, then retry.",
+        doc_ref="docs/errors.md#RLLM_014",
+    )
 
 
 def _validate_context(program: RLLMProgram, payload: dict[str, Any], prompt: str) -> None:
@@ -174,6 +199,7 @@ def _run_single(
     _validate_context(program, input_payload, rendered_prompt)
 
     model = _prepare_model(program, options)
+    _ensure_provider_credentials(model)
     if model.startswith("ollama/"):
         short_model = model.split("/", 1)[1]
         ensure_ollama_model(short_model, auto_pull=options.ollama_auto_pull)
@@ -296,8 +322,22 @@ def run_program(
     options: RunOptions | None = None,
     *,
     completion_fn: Any | None = None,
+    autoload_config: bool | None = None,
 ) -> dict[str, Any]:
-    opts = options or RunOptions()
+    if autoload_config is None:
+        autoload = os.environ.get("RUNLLM_NO_CONFIG_AUTOLOAD") != "1"
+    else:
+        autoload = autoload_config
+    load_runtime_config(autoload=autoload)
+    if options is None:
+        cfg = get_runtime_config()
+        opts = RunOptions(
+            model_override=cfg.default_model,
+            max_retries=cfg.default_max_retries,
+            ollama_auto_pull=cfg.default_ollama_auto_pull,
+        )
+    else:
+        opts = options
     store = StatsStore()
     return _run_program_path(
         program_path,

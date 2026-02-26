@@ -66,6 +66,9 @@ pip install -e .
 If you used `pip install --user`, make sure your user scripts path is on `PATH`.
 See `docs/global-install.md`.
 
+For provider API keys (OpenAI and others), see `docs/provider-credentials.md`.
+Autoload and precedence details are in `docs/configuration.md`.
+
 ## Quickstart
 
 Validate an app:
@@ -149,6 +152,8 @@ See `examples/`.
 - Composition guide: `docs/composition.md`
 - Ollama guide: `docs/ollama.md`
 - Global install: `docs/global-install.md`
+- Provider credentials: `docs/provider-credentials.md`
+- Configuration and autoload: `docs/configuration.md`
 - Migration notes: `docs/migration.md`
 
 ## For coding agents

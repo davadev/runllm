@@ -56,6 +56,10 @@ All runtime failures are emitted as structured JSON.
   - Trigger: all retry attempts failed output validation.
   - Fix: improve `<<<RECOVERY>>>`, simplify schema, or switch model.
 
+- `RLLM_014` MissingProviderCredentialError
+  - Trigger: provider model selected without required API key in environment/autoloaded config.
+  - Fix: set missing env var (for example `OPENAI_API_KEY`) and retry.
+
 - `RLLM_999` UnknownUnhandledError
   - Trigger: non-classified exception.
   - Fix: inspect message and reproduce with smaller input.

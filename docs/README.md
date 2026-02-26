@@ -22,4 +22,6 @@ Start here based on your role.
 - `composition.md`
 - `ollama.md`
 - `global-install.md`
+- `provider-credentials.md`
+- `configuration.md`
 - `migration.md`

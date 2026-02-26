@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from runllm.config import get_runtime_config, load_runtime_config
 from runllm.errors import RunLLMError
 from runllm.executor import estimate_execution_time_ms, run_program
 from runllm.models import RunOptions
@@ -40,14 +42,26 @@ def _print_json(payload: dict[str, Any]) -> None:
 
 def cmd_run(args: argparse.Namespace) -> int:
     input_payload = _load_input(args)
+    cfg = get_runtime_config()
+    retries = args.max_retries if args.max_retries is not None else cfg.default_max_retries
+    model = args.model or cfg.default_model
+    if args.ollama_auto_pull is None:
+        ollama_auto_pull = cfg.default_ollama_auto_pull
+    else:
+        ollama_auto_pull = args.ollama_auto_pull
     options = RunOptions(
-        model_override=args.model,
-        max_retries=args.max_retries,
+        model_override=model,
+        max_retries=retries,
         verbose=args.verbose,
-        ollama_auto_pull=args.ollama_auto_pull,
+        ollama_auto_pull=ollama_auto_pull,
         trusted_python=args.trusted_python,
     )
-    output = run_program(args.file, input_payload, options)
+    output = run_program(
+        args.file,
+        input_payload,
+        options,
+        autoload_config=getattr(args, "_autoload_config", None),
+    )
     _print_json(output)
     return 0
 
@@ -100,6 +114,11 @@ def cmd_exectime(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="runllm", description="Run .rllm apps")
+    parser.add_argument(
+        "--no-config-autoload",
+        action="store_true",
+        help="Disable automatic loading of .env/config files.",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_p = sub.add_parser("run", help="Execute .rllm file")
@@ -107,9 +126,9 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--input", help="Inline JSON input object")
     run_p.add_argument("--input-file", help="JSON/YAML input file")
     run_p.add_argument("--model", help="Override model")
-    run_p.add_argument("--max-retries", type=int, default=2)
+    run_p.add_argument("--max-retries", type=int)
     run_p.add_argument("--verbose", action="store_true")
-    run_p.add_argument("--ollama-auto-pull", action="store_true")
+    run_p.add_argument("--ollama-auto-pull", action="store_true", default=None)
     run_p.add_argument("--trusted-python", action="store_true")
     run_p.set_defaults(func=cmd_run)
 
@@ -138,6 +157,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        autoload = not args.no_config_autoload and os.environ.get("RUNLLM_NO_CONFIG_AUTOLOAD") != "1"
+        load_runtime_config(autoload=autoload)
+        setattr(args, "_autoload_config", autoload)
         return int(args.func(args))
     except RunLLMError as exc:
         _print_json(exc.payload.to_dict())
