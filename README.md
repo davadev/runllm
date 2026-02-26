@@ -1,6 +1,51 @@
 # runllm
 
-`runllm` is a lightweight Python CLI/runtime for `.rllm` files: single-iteration LLM apps with typed input/output contracts, schema retries, composition, and execution stats.
+Most LLM systems fail for predictable reasons:
+
+- Too many tools available at once, so the model chooses poorly.
+- Too many instructions in one prompt, so key constraints are forgotten.
+- Output schema drift, especially in longer workflows.
+- "Agentic" setups that require tool-calling models only, which often means bigger models and stronger hardware.
+
+`runllm` is built to solve this by changing the unit of work.
+
+Instead of one giant, fragile agent, you write small atomic `.rllm` programs.
+Each program does one thing, has strict typed input/output, and can be stacked with other programs.
+
+That gives you a practical production path:
+
+- More deterministic behavior.
+- Better schema compliance.
+- Better observability (success rate, latency, token usage).
+- Better model flexibility (use small local models where they fit, stronger models where needed).
+
+In short: fewer "smart but flaky" systems, more reliable workflows.
+
+## What runllm gives you
+
+- Single-iteration `.rllm` apps with explicit contracts.
+- Input and output validation using JSON Schema subset.
+- Retry with recovery prompts when output schema fails.
+- Composition (`uses`) so apps can call other apps like functions.
+- Per-app/per-model stats in SQLite.
+- Execution-time estimation (`exectime`) when stacking apps.
+- Ollama support without requiring tool-calling-only models.
+
+## Why this approach works
+
+LLMs perform best on focused tasks.
+
+When one call has to route, reason, extract, transform, and format all at once, reliability drops.
+When each call is atomic and schema-bounded, reliability rises.
+
+`runllm` makes this pattern first-class:
+
+1. Define tiny apps with strict I/O.
+2. Measure each app's compliance and runtime.
+3. Compose apps into larger workflows.
+4. Predict cost/latency and identify weak links.
+
+This makes local and small-model workflows viable for many users, not only teams with large GPU setups.
 
 ## Install
 
@@ -35,17 +80,62 @@ runllm stats examples/summary.rllm
 runllm exectime examples/compose_summary_keywords.rllm
 ```
 
-## Files
+## Live local testing with Ollama
+
+By default, tests that call real local models are skipped.
+
+Run standard tests:
+
+```bash
+python3 -m pytest -q
+```
+
+Run live Ollama integration tests:
+
+```bash
+RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_examples_ollama_live.py
+```
+
+These live tests validate schema compliance and structural correctness rather than exact text, because LLM text is non-deterministic.
+
+## Example apps
+
+The repository includes diverse examples such as:
+
+- Intent routing
+- Support reply drafting
+- Multi-step support pipeline (composition)
+- Meeting extraction
+- Policy compliance guard
+- Schema repair proxy
+- Code patch planner
+- Test case generator
+- OCR post-processing
+- Risk score aggregation (composition + python post block)
+
+See `examples/`.
+
+## Core commands
+
+- `runllm run <file.rllm> ...`
+- `runllm validate <file.rllm>`
+- `runllm inspect <file.rllm>`
+- `runllm stats <file.rllm> [--model ...]`
+- `runllm exectime <file.rllm> [--model ...]`
+
+## Project docs
 
 - `.rllm` format spec: `docs/rllm-spec.md`
 - CLI reference: `docs/cli.md`
 - Error reference: `docs/errors.md`
 - Composition guide: `docs/composition.md`
 - Ollama guide: `docs/ollama.md`
+- Migration notes: `docs/migration.md`
 
-## Notes
+## Practical notes
 
 - Output contract defaults to JSON object for strict parsing reliability.
 - Schemas use a JSON Schema subset for both input and output.
-- Stats are stored in SQLite under `~/.config/runllm/stats.db`.
+- Stats are stored in `~/.config/runllm/stats.db`.
 - Ollama auto-pull is opt-in (`--ollama-auto-pull`).
+- You can choose model per app, so workflows can mix small fast models and larger reasoning models.
