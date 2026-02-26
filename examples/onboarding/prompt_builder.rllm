@@ -2,6 +2,8 @@
 name: prompt_builder
 description: Draft concise JSON-first main prompt for the new app.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 9000
 input_schema:

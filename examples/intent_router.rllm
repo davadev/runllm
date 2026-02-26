@@ -2,6 +2,8 @@
 name: intent_router
 description: Route incoming support text into one intent label.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 6000
 input_schema:

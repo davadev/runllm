@@ -34,6 +34,8 @@ EMBEDDED_ONBOARDING_APPS: dict[str, str] = {
 name: provider_select
 description: Recommend a provider/model pair based on user constraints.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 8000
 input_schema:
@@ -70,6 +72,8 @@ Return ONLY JSON object with keys provider, model, rationale.
 name: credential_check
 description: Produce setup guidance for provider credential status.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 8000
 input_schema:
@@ -113,6 +117,8 @@ Return ONLY JSON object with keys status, next_action, setup_steps.
 name: hello_test
 description: Generate a deterministic hello-world connectivity payload.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 8000
 input_schema:
@@ -145,6 +151,8 @@ Return ONLY JSON object with keys message and ok.
 name: app_goal_capture
 description: Refine user app goal into a clear micro-app objective.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 8000
 input_schema:
@@ -182,6 +190,8 @@ Return ONLY JSON object with keys app_name_hint, purpose, acceptance_criteria.
 name: prompt_builder
 description: Draft concise JSON-first main prompt for the new app.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 9000
 input_schema:
@@ -219,6 +229,8 @@ Return ONLY JSON object with key prompt.
 name: recovery_builder
 description: Draft strict recovery prompt for schema retry.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 9000
 input_schema:
@@ -254,6 +266,8 @@ Return ONLY JSON object with key recovery_prompt.
 name: input_schema_builder
 description: Draft strict input schema structure from a purpose statement.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 9000
 input_schema:
@@ -298,6 +312,8 @@ Return ONLY JSON object with keys properties, required, notes.
 name: output_schema_builder
 description: Draft strict output schema structure from app purpose.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 9000
 input_schema:
@@ -342,6 +358,8 @@ Return ONLY JSON object with keys properties, required, notes.
 name: context_window_picker
 description: Recommend max_context_window based on task profile.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 7000
 input_schema:
@@ -379,6 +397,8 @@ Return ONLY JSON object with keys recommended_max_context_window and rationale.
 name: file_assembler
 description: Assemble final .rllm text from onboarding components.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 12000
 input_schema:
@@ -420,6 +440,8 @@ Return ONLY JSON object with keys rllm_text and notes.
 name: validate_and_test
 description: Produce runbook steps for validating and smoke-testing generated app.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 9000
 input_schema:
@@ -750,6 +772,7 @@ def _render_rllm_text(
         "name": app_name,
         "description": description,
         "version": "0.1.0",
+        "runllm_compat": {"min": "0.1.0"},
         "author": author,
         "max_context_window": max_context_window,
         "input_schema": input_schema,
@@ -775,6 +798,8 @@ def _render_connectivity_probe_app_text(model: str) -> str:
 name: onboarding_connectivity_probe
 description: Connectivity probe for onboarding.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 2000
 input_schema:

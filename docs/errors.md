@@ -68,6 +68,10 @@ Related docs:
   - Trigger: provider model selected without required API key in environment/autoloaded config.
   - Fix: set missing env var (for example `OPENAI_API_KEY`) and retry.
 
+- `RLLM_015` RuntimeCompatibilityError
+  - Trigger: `.rllm` `runllm_compat` bounds do not include installed `runllm` version.
+  - Fix: upgrade/downgrade `runllm` runtime or adjust `runllm_compat` metadata.
+
 - `RLLM_999` UnknownUnhandledError
   - Trigger: non-classified exception.
   - Fix: inspect message and reproduce with smaller input.

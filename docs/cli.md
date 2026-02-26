@@ -44,6 +44,7 @@ runllm validate <file.rllm>
 ```
 
 Returns normalized metadata fields and `ok: true` on success.
+When `runllm_compat` is present, `validate` also enforces runtime-version bounds.
 
 ## `runllm inspect`
 
@@ -54,6 +55,7 @@ runllm inspect <file.rllm>
 ```
 
 Use this to inspect schemas, `uses`, recommended models, and metadata.
+`inspect` also enforces `runllm_compat` bounds during parse.
 
 ## `runllm stats`
 

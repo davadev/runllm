@@ -40,6 +40,9 @@ def _help_topics_text() -> dict[str, str]:
             - llm (object, must include model)
             - llm_params (object)
 
+            Optional frontmatter keys:
+            - runllm_compat (object with min and optional max_exclusive)
+
             Body structure:
             - main prompt text
             - optional <<<RECOVERY>>> block
@@ -173,6 +176,7 @@ def _help_topics_json() -> dict[str, Any]:
                 "llm",
                 "llm_params",
             ],
+            "optional_fields": ["runllm_compat", "metadata", "recommended_models", "tags", "uses", "recovery_prompt"],
             "templating": ["{{input.<path>}}", "{{uses.<dep>.<path>}}"],
             "optional_sections": ["<<<RECOVERY>>>", "```rllm-python pre/post"],
             "docs": [

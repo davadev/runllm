@@ -12,6 +12,10 @@ Current `.rllm` spec version: `0.1`.
 Compatibility rules:
 - Runtime should remain backward compatible with `0.1.x` files.
 - Any breaking file-format changes require `0.2`+ and migration notes.
+- Apps can declare runtime bounds with optional `runllm_compat` metadata:
+  - `min` (required when present)
+  - `max_exclusive` (optional)
+- Runtime enforces compatibility bounds during parse/validate/run.
 
 Stats DB:
 - `schema_version` is tracked in `meta` table.

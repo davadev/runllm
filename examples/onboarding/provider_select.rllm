@@ -2,6 +2,8 @@
 name: provider_select
 description: Recommend a provider/model pair based on user constraints.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 8000
 input_schema:

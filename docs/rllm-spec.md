@@ -33,6 +33,8 @@ Optional sections in body:
 name: my_app
 description: One sentence purpose.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: your_name
 max_context_window: 8000
 input_schema:
@@ -81,6 +83,23 @@ Input:
 - `tags` string array
 - `uses` array (composition)
 - `recovery_prompt` string (alternative to `<<<RECOVERY>>>` block)
+- `runllm_compat` object (runtime compatibility bounds)
+
+`runllm_compat` shape:
+
+```yaml
+runllm_compat:
+  min: 0.1.0
+```
+
+Rules:
+
+- `min` is required when `runllm_compat` is present.
+- `max_exclusive` is optional.
+- Both values must be semantic versions in `X.Y.Z` format.
+- Runtime enforces: `min <= installed_runllm_version < max_exclusive` (when max is provided).
+- If `runllm_compat` is omitted, no runtime-version bound is enforced.
+- Recommended default: set only `min`; add `max_exclusive` only when you need an explicit upper bound.
 
 ## Supported `llm_params` keys
 

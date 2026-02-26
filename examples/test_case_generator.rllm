@@ -2,6 +2,8 @@
 name: test_case_generator
 description: Generate unit and property-style tests from function contract.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 20000
 input_schema:

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
+import re
 from typing import Any
 
+from packaging.version import InvalidVersion, Version
 import yaml
 
 from runllm.errors import make_error
@@ -21,6 +24,9 @@ REQUIRED_FIELDS = {
     "llm",
     "llm_params",
 }
+
+_SEMVER_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+_PYPROJECT_VERSION_PATTERN = re.compile(r'^version\s*=\s*"([^"]+)"\s*$', re.MULTILINE)
 
 
 def _split_frontmatter(text: str) -> tuple[dict[str, Any], str]:
@@ -135,6 +141,153 @@ def _validate_metadata(meta: dict[str, Any]) -> None:
         )
 
     validate_litellm_params(meta["llm_params"])
+    _validate_runtime_compatibility(meta)
+
+
+def _parse_strict_semver(version_text: str, *, field_name: str) -> tuple[int, int, int]:
+    match = _SEMVER_PATTERN.fullmatch(version_text.strip())
+    if not match:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message=f"{field_name} must be a semantic version string (X.Y.Z).",
+            details={"field": field_name, "value": version_text},
+            recovery_hint=f"Set {field_name} to a value like 0.1.0.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def _runtime_version(runtime_version_text: str) -> Version:
+    try:
+        return Version(runtime_version_text.strip())
+    except InvalidVersion:
+        raise make_error(
+            error_code="RLLM_015",
+            error_type="RuntimeCompatibilityError",
+            message="Installed runllm runtime version is not supported for compatibility checks.",
+            details={"runtime_version": runtime_version_text},
+            recovery_hint="Use a valid release version like 0.1.0 or PEP 440 prerelease like 0.2.0rc1.",
+            doc_ref="docs/errors.md#RLLM_015",
+        )
+
+
+def _runtime_version_text() -> str:
+    local_version = _runtime_version_from_pyproject()
+    if local_version is not None:
+        return local_version
+    try:
+        return package_version("runllm")
+    except PackageNotFoundError:
+        raise make_error(
+            error_code="RLLM_015",
+            error_type="RuntimeCompatibilityError",
+            message="Could not determine installed runllm runtime version.",
+            details={},
+            recovery_hint="Install runllm in this environment before validating or running .rllm files.",
+            doc_ref="docs/errors.md#RLLM_015",
+        )
+
+
+def _runtime_version_from_pyproject() -> str | None:
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    if not pyproject_path.exists():
+        return None
+    text = pyproject_path.read_text(encoding="utf-8")
+    match = _PYPROJECT_VERSION_PATTERN.search(text)
+    if not match:
+        return None
+    return match.group(1)
+
+
+def _validate_runtime_compatibility(meta: dict[str, Any]) -> None:
+    raw_compat = meta.get("runllm_compat")
+    if raw_compat is None:
+        return
+    if not isinstance(raw_compat, dict):
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="runllm_compat must be a mapping/object when provided.",
+            details={"actual_type": type(raw_compat).__name__},
+            recovery_hint="Define runllm_compat as an object with min and optional max_exclusive.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
+    min_version_raw = raw_compat.get("min")
+    max_exclusive_raw = raw_compat.get("max_exclusive")
+
+    if not isinstance(min_version_raw, str) or not min_version_raw.strip():
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="runllm_compat.min is required and must be a non-empty string.",
+            details={"runllm_compat": raw_compat},
+            recovery_hint="Set runllm_compat.min to a semantic version like 0.1.0.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
+    if max_exclusive_raw is not None and (not isinstance(max_exclusive_raw, str) or not max_exclusive_raw.strip()):
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="runllm_compat.max_exclusive must be a non-empty string when provided.",
+            details={"runllm_compat": raw_compat},
+            recovery_hint="Set runllm_compat.max_exclusive to a semantic version like 0.2.0 or omit it.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
+    min_version = _parse_strict_semver(min_version_raw, field_name="runllm_compat.min")
+    max_exclusive = (
+        _parse_strict_semver(max_exclusive_raw, field_name="runllm_compat.max_exclusive")
+        if isinstance(max_exclusive_raw, str)
+        else None
+    )
+    if max_exclusive is not None and min_version >= max_exclusive:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="runllm_compat.min must be lower than runllm_compat.max_exclusive.",
+            details={"runllm_compat": raw_compat},
+            recovery_hint="Choose compatibility bounds where min < max_exclusive.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
+    runtime_version_text = _runtime_version_text()
+    runtime_version = _runtime_version(runtime_version_text)
+    min_version_bound = Version(f"{min_version[0]}.{min_version[1]}.{min_version[2]}")
+    max_exclusive_bound = (
+        Version(f"{max_exclusive[0]}.{max_exclusive[1]}.{max_exclusive[2]}")
+        if max_exclusive is not None
+        else None
+    )
+    if runtime_version < min_version_bound:
+        raise make_error(
+            error_code="RLLM_015",
+            error_type="RuntimeCompatibilityError",
+            message="Installed runllm version is below app minimum compatibility.",
+            details={
+                "runtime_version": runtime_version_text,
+                "required_min": min_version_raw,
+                "required_max_exclusive": max_exclusive_raw,
+            },
+            recovery_hint="Upgrade runllm or lower runllm_compat.min for this app.",
+            doc_ref="docs/errors.md#RLLM_015",
+        )
+
+    if max_exclusive_bound is not None and runtime_version >= max_exclusive_bound:
+        raise make_error(
+            error_code="RLLM_015",
+            error_type="RuntimeCompatibilityError",
+            message="Installed runllm version is above app supported compatibility range.",
+            details={
+                "runtime_version": runtime_version_text,
+                "required_min": min_version_raw,
+                "required_max_exclusive": max_exclusive_raw,
+            },
+            recovery_hint="Use an older compatible runllm version or raise runllm_compat.max_exclusive.",
+            doc_ref="docs/errors.md#RLLM_015",
+        )
 
 
 def _parse_uses(path: Path, raw_uses: Any) -> list[UseSpec]:

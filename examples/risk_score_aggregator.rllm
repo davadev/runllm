@@ -2,6 +2,8 @@
 name: risk_score_aggregator
 description: Aggregate risk from policy, meeting, and routing signals.
 version: 0.1.0
+runllm_compat:
+  min: 0.1.0
 author: runllm
 max_context_window: 20000
 input_schema:
