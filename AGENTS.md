@@ -155,6 +155,7 @@ When behavior changes, update docs in same PR/commit.
 
 Minimum docs to evaluate:
 
+- `ROADMAP.md` (when release scope/milestones change)
 - `README.md`
 - `docs/rllm-spec.md`
 - `docs/cli.md`

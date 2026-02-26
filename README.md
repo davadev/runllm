@@ -141,6 +141,7 @@ See `examples/`.
 
 ## Project docs
 
+- Project roadmap: `ROADMAP.md`
 - Docs index: `docs/README.md`
 - `.rllm` format spec: `docs/rllm-spec.md`
 - Authoring guide: `docs/authoring-guide.md`

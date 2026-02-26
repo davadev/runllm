@@ -16,6 +16,7 @@ This repository keeps runtime behavior and docs aligned.
 
 When runtime behavior changes (for example retry logic, parsing behavior, or supported params), update:
 
+- `ROADMAP.md` (if planned scope/milestones change)
 - `docs/rllm-spec.md`
 - `docs/cli.md`
 - `docs/errors.md`

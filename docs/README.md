@@ -2,6 +2,10 @@
 
 Start here based on your role.
 
+Repository planning:
+
+- `../ROADMAP.md`
+
 ## Building apps manually
 
 1. `authoring-guide.md`
