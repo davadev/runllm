@@ -1,0 +1,55 @@
+---
+name: onboarding_workflow
+description: Parent composed onboarding blueprint from setup to app scaffolding.
+version: 0.1.0
+author: runllm
+max_context_window: 14000
+input_schema:
+  type: object
+  properties:
+    preferred_provider: { type: string }
+    priority: { type: string }
+    raw_goal: { type: string }
+  required: [preferred_provider, priority, raw_goal]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    provider: { type: string }
+    model: { type: string }
+    purpose: { type: string }
+    scaffold_plan:
+      type: array
+      items: { type: string }
+      minItems: 3
+  required: [provider, model, purpose, scaffold_plan]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+uses:
+  - name: provider
+    path: ./provider_select.rllm
+    with:
+      preferred_provider: "{{input.preferred_provider}}"
+      priority: "{{input.priority}}"
+  - name: goal
+    path: ./app_goal_capture.rllm
+    with:
+      raw_goal: "{{input.raw_goal}}"
+tags: [onboarding, composition]
+---
+Use dependency outputs to produce a concise onboarding scaffold plan.
+Return ONLY JSON object with keys provider, model, purpose, scaffold_plan.
+
+Provider recommendation:
+provider={{uses.provider.provider}}
+model={{uses.provider.model}}
+
+Goal refinement:
+purpose={{uses.goal.purpose}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys provider, model, purpose, scaffold_plan.

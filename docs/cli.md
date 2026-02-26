@@ -101,6 +101,28 @@ runllm help rllm --format text
 runllm help schema --format json
 ```
 
+## `runllm onboard`
+
+Interactive chat-style onboarding flow to configure credentials and generate a first app.
+
+```bash
+runllm [--no-config-autoload] onboard [--model model] [--resume] [--session-file path]
+```
+
+Behavior:
+- chat-style goal capture and iterative app draft defaults
+- prompts for provider/model (unless `--model` is provided)
+- checks required provider credential
+- optionally writes missing key to selected `.env` path after explicit confirmation
+- runs connectivity check
+- uses onboarding `.rllm` micro-app steps to draft purpose/prompt/recovery
+- scaffolds a first `.rllm` file and validates it
+- runs a sample execution using gathered sample input
+
+Session options:
+- `--resume` load defaults from prior session state
+- `--session-file` custom state path (default: `.runllm/onboarding-session.json`)
+
 ## Exit behavior
 
 - Success returns exit code `0` and JSON output payload.

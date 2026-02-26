@@ -1,0 +1,37 @@
+---
+name: context_window_picker
+description: Recommend max_context_window based on task profile.
+version: 0.1.0
+author: runllm
+max_context_window: 7000
+input_schema:
+  type: object
+  properties:
+    task_size: { type: string, enum: [small, medium, large] }
+    expected_input_length: { type: string }
+  required: [task_size, expected_input_length]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    recommended_max_context_window:
+      type: integer
+      minimum: 1024
+    rationale: { type: string }
+  required: [recommended_max_context_window, rationale]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, tuning]
+---
+Recommend max_context_window for this app.
+Return ONLY JSON object with keys recommended_max_context_window and rationale.
+
+Task size: {{input.task_size}}
+Expected input length: {{input.expected_input_length}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys recommended_max_context_window and rationale.

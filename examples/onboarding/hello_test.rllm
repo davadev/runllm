@@ -1,0 +1,32 @@
+---
+name: hello_test
+description: Generate a deterministic hello-world connectivity payload.
+version: 0.1.0
+author: runllm
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    user_name: { type: string }
+  required: [user_name]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    message: { type: string }
+    ok: { type: boolean }
+  required: [message, ok]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, connectivity]
+---
+Return ONLY JSON object with keys message and ok.
+Message should be a short hello-world line for {{input.user_name}}.
+ok must be true.
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys message and ok.

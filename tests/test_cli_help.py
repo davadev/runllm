@@ -61,3 +61,13 @@ def test_run_help_describes_key_flags(capsys) -> None:
     assert "--max-retries" in out
     assert "--trusted-python" in out
     assert "--ollama-auto-pull" in out
+
+
+def test_onboard_help_describes_resume_flags(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["onboard", "--help"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "--resume" in out
+    assert "--session-file" in out

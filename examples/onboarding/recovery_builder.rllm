@@ -1,0 +1,35 @@
+---
+name: recovery_builder
+description: Draft strict recovery prompt for schema retry.
+version: 0.1.0
+author: runllm
+max_context_window: 9000
+input_schema:
+  type: object
+  properties:
+    output_keys:
+      type: array
+      items: { type: string }
+      minItems: 1
+  required: [output_keys]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    recovery_prompt: { type: string }
+  required: [recovery_prompt]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, prompting]
+---
+Create strict recovery prompt text for schema retries.
+Return ONLY JSON object with key recovery_prompt.
+
+Output keys: {{input.output_keys}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with key recovery_prompt.

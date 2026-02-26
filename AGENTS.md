@@ -146,7 +146,9 @@ Follow existing style in this codebase.
 - Always run targeted tests for changed modules first.
 - Then run full suite:
   - `python3 -m pytest -q`
-- Only run live tests when relevant and environment supports local models.
+- Also run Ollama live integration tests on every test pass:
+  - `RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_examples_ollama_live.py`
+  - `RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_onboarding_ollama_live.py`
 - For non-deterministic LLM behavior, assert schema/structure, not exact wording.
 
 ## Documentation Sync Requirements

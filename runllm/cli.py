@@ -14,6 +14,7 @@ from runllm.config import get_runtime_config, load_runtime_config
 from runllm.errors import RunLLMError, make_error
 from runllm.executor import estimate_execution_time_ms, run_program
 from runllm.models import RunOptions
+from runllm.onboarding import cmd_onboard
 from runllm.parser import parse_rllm_file
 from runllm.stats import StatsStore
 
@@ -373,7 +374,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable automatic loading of .env/config files.",
     )
-    sub = parser.add_subparsers(dest="command", required=True, metavar="{run,validate,inspect,stats,exectime,help}")
+    sub = parser.add_subparsers(
+        dest="command",
+        required=True,
+        metavar="{run,validate,inspect,stats,exectime,onboard,help}",
+    )
 
     run_p = sub.add_parser(
         "run",
@@ -437,6 +442,25 @@ def build_parser() -> argparse.ArgumentParser:
     e_p.add_argument("file", metavar="FILE", help="Path to .rllm file")
     e_p.add_argument("--model", metavar="MODEL", help="Estimate for one model only")
     e_p.set_defaults(func=cmd_exectime)
+
+    o_p = sub.add_parser(
+        "onboard",
+        help="Interactive first-app onboarding flow",
+        description="Guide setup, connectivity test, and first .rllm app creation.",
+        formatter_class=_HelpFormatter,
+    )
+    o_p.add_argument("--model", metavar="MODEL", help="Preselect model for onboarding flow")
+    o_p.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume defaults from saved onboarding session file",
+    )
+    o_p.add_argument(
+        "--session-file",
+        metavar="PATH",
+        help="Custom onboarding session state path",
+    )
+    o_p.set_defaults(func=cmd_onboard)
 
     h_p = sub.add_parser(
         "help",

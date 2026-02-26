@@ -1,0 +1,36 @@
+---
+name: provider_select
+description: Recommend a provider/model pair based on user constraints.
+version: 0.1.0
+author: runllm
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    preferred_provider: { type: string }
+    priority: { type: string, enum: [speed, quality, cost, local] }
+  required: [preferred_provider, priority]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    provider: { type: string }
+    model: { type: string }
+    rationale: { type: string }
+  required: [provider, model, rationale]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, setup]
+---
+Recommend one provider/model pair.
+Return ONLY JSON object with keys provider, model, rationale.
+
+Preferred provider: {{input.preferred_provider}}
+Priority: {{input.priority}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys provider, model, rationale.

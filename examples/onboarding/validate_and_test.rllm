@@ -1,0 +1,38 @@
+---
+name: validate_and_test
+description: Produce runbook steps for validating and smoke-testing generated app.
+version: 0.1.0
+author: runllm
+max_context_window: 9000
+input_schema:
+  type: object
+  properties:
+    app_path: { type: string }
+    sample_input: { type: string }
+  required: [app_path, sample_input]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    checklist:
+      type: array
+      items: { type: string }
+      minItems: 3
+    troubleshooting: { type: string }
+  required: [checklist, troubleshooting]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, validation]
+---
+Return validation and smoke-test checklist.
+Return ONLY JSON object with keys checklist and troubleshooting.
+
+App path: {{input.app_path}}
+Sample input: {{input.sample_input}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys checklist and troubleshooting.

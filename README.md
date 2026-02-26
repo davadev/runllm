@@ -100,6 +100,14 @@ Config/autoload details:
 
 ## Quickstart (2 minutes)
 
+If you want a guided first-run flow, use onboarding:
+
+```bash
+runllm onboard
+```
+
+Onboarding is chat-style and can resume previous progress with `runllm onboard --resume`.
+
 1) Validate an app:
 
 ```bash
@@ -130,6 +138,7 @@ runllm exectime examples/compose_summary_keywords.rllm
 ## Core commands
 
 - `runllm run <file.rllm> ...`
+- `runllm onboard [--model ...] [--resume]`
 - `runllm validate <file.rllm>`
 - `runllm inspect <file.rllm>`
 - `runllm stats <file.rllm> [--model ...]`

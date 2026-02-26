@@ -1,0 +1,37 @@
+---
+name: prompt_builder
+description: Draft concise JSON-first main prompt for the new app.
+version: 0.1.0
+author: runllm
+max_context_window: 9000
+input_schema:
+  type: object
+  properties:
+    purpose: { type: string }
+    output_keys:
+      type: array
+      items: { type: string }
+      minItems: 1
+  required: [purpose, output_keys]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    prompt: { type: string }
+  required: [prompt]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, prompting]
+---
+Generate a concise main prompt.
+Return ONLY JSON object with key prompt.
+
+Purpose: {{input.purpose}}
+Output keys: {{input.output_keys}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with key prompt.

@@ -1,0 +1,41 @@
+---
+name: file_assembler
+description: Assemble final .rllm text from onboarding components.
+version: 0.1.0
+author: runllm
+max_context_window: 12000
+input_schema:
+  type: object
+  properties:
+    app_name: { type: string }
+    description: { type: string }
+    model: { type: string }
+    prompt: { type: string }
+    recovery_prompt: { type: string }
+  required: [app_name, description, model, prompt, recovery_prompt]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    rllm_text: { type: string }
+    notes: { type: string }
+  required: [rllm_text, notes]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, assembly]
+---
+Assemble a complete .rllm file content string from user-provided parts.
+Return ONLY JSON object with keys rllm_text and notes.
+
+App name: {{input.app_name}}
+Description: {{input.description}}
+Model: {{input.model}}
+Prompt: {{input.prompt}}
+Recovery prompt: {{input.recovery_prompt}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys rllm_text and notes.

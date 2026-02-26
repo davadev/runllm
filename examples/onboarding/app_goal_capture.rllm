@@ -1,0 +1,37 @@
+---
+name: app_goal_capture
+description: Refine user app goal into a clear micro-app objective.
+version: 0.1.0
+author: runllm
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    raw_goal: { type: string }
+  required: [raw_goal]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    app_name_hint: { type: string }
+    purpose: { type: string }
+    acceptance_criteria:
+      type: array
+      items: { type: string }
+      minItems: 2
+  required: [app_name_hint, purpose, acceptance_criteria]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+tags: [onboarding, builder]
+---
+Refine the user goal into one atomic app objective.
+Return ONLY JSON object with keys app_name_hint, purpose, acceptance_criteria.
+
+Goal: {{input.raw_goal}}
+
+<<<RECOVERY>>>
+Return ONLY JSON object with keys app_name_hint, purpose, acceptance_criteria.

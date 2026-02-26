@@ -5,23 +5,14 @@ import pytest
 from runllm.parser import parse_rllm_file
 
 
-NEW_EXAMPLES = [
-    "intent_router.rllm",
-    "support_reply_drafter.rllm",
-    "support_pipeline.rllm",
-    "meeting_extractor.rllm",
-    "policy_guard.rllm",
-    "schema_repair_proxy.rllm",
-    "code_patch_planner.rllm",
-    "test_case_generator.rllm",
-    "ocr_postprocessor.rllm",
-    "risk_score_aggregator.rllm",
-]
+REPO_ROOT = Path(__file__).resolve().parents[1]
+EXAMPLES_DIR = REPO_ROOT / "examples"
+ALL_EXAMPLES = sorted(EXAMPLES_DIR.rglob("*.rllm"))
+assert ALL_EXAMPLES, "No .rllm files found under examples/."
 
 
-@pytest.mark.parametrize("filename", NEW_EXAMPLES)
-def test_new_examples_parse(filename: str) -> None:
-    path = Path("examples") / filename
+@pytest.mark.parametrize("path", ALL_EXAMPLES)
+def test_examples_parse(path: Path) -> None:
     program = parse_rllm_file(path)
     assert program.name
     assert isinstance(program.input_schema, dict)
