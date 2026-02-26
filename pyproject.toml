@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "runllm"
+version = "0.1.0"
+description = "Run .rllm single-iteration LLM apps with typed contracts"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "runllm contributors" }
+]
+dependencies = [
+  "litellm>=1.58.0",
+  "PyYAML>=6.0.1",
+  "jsonschema>=4.23.0"
+]
+
+[project.scripts]
+runllm = "runllm.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = ["runllm"]

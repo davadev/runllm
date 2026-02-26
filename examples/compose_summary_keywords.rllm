@@ -1,0 +1,47 @@
+---
+name: compose_summary_keywords
+description: Compose summary and keyword apps into one response.
+version: 0.1.0
+author: runllm
+max_context_window: 12000
+input_schema:
+  type: object
+  properties:
+    text:
+      type: string
+  required: [text]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    summary:
+      type: string
+    keywords:
+      type: array
+      items:
+        type: string
+  required: [summary, keywords]
+  additionalProperties: false
+llm:
+  model: openai/gpt-4o-mini
+llm_params:
+  temperature: 0
+uses:
+  - name: summary_app
+    path: ./summary.rllm
+    with:
+      text: "{{input.text}}"
+  - name: keywords_app
+    path: ./extract_keywords.rllm
+    with:
+      text: "{{input.text}}"
+---
+You combine outputs from dependency apps.
+Return only JSON:
+{"summary": "...", "keywords": ["..."]}
+
+Dependency summary:
+{{uses.summary_app.summary}}
+
+Dependency keywords:
+{{uses.keywords_app.keywords}}

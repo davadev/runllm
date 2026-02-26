@@ -1,0 +1,39 @@
+---
+name: summary
+description: Summarize text into a concise paragraph.
+version: 0.1.0
+author: runllm
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    text:
+      type: string
+  required: [text]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    summary:
+      type: string
+  required: [summary]
+  additionalProperties: false
+llm:
+  model: openai/gpt-4o-mini
+llm_params:
+  temperature: 0.2
+recommended_models:
+  - openai/gpt-4o-mini
+metadata:
+  category: nlp
+---
+You are a summarization app.
+Return ONLY valid JSON object matching this shape:
+{"summary": "..."}
+
+Input text:
+{{input.text}}
+
+<<<RECOVERY>>>
+Your previous response did not satisfy output_schema.
+Respond with only a JSON object with exactly one key: summary (string).

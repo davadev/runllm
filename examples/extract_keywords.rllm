@@ -1,0 +1,36 @@
+---
+name: extract_keywords
+description: Extract top keywords from text.
+version: 0.1.0
+author: runllm
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    text:
+      type: string
+  required: [text]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    keywords:
+      type: array
+      items:
+        type: string
+      maxItems: 8
+  required: [keywords]
+  additionalProperties: false
+llm:
+  model: openai/gpt-4o-mini
+llm_params:
+  temperature: 0.0
+recommended_models:
+  - openai/gpt-4o-mini
+---
+Extract the most relevant keywords from this text.
+Return only valid JSON:
+{"keywords": ["..."]}
+
+Text:
+{{input.text}}
