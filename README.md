@@ -23,6 +23,8 @@ That gives you a practical production path:
 
 In short: fewer "smart but flaky" systems, more reliable workflows.
 
+`runllm` is also designed so coding LLM agents can scaffold these micro-apps for you, so end users do not need to know `.rllm` authoring details to start building workflows.
+
 ## What runllm gives you
 
 - Single-iteration `.rllm` apps with explicit contracts.
