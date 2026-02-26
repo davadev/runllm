@@ -75,6 +75,32 @@ runllm exectime <file.rllm> [--model model]
 
 Returns estimated latency from observed averages of parent + direct dependencies.
 
+## `runllm help`
+
+Show detailed authoring help topics designed for both humans and coding agents.
+
+Default output format is JSON for automation-friendly consumption.
+
+```bash
+runllm help <topic> [--format text|json]
+```
+
+Topics:
+- `rllm`
+- `schema`
+- `recovery`
+- `examples`
+- `credentials`
+- `config`
+
+Examples:
+
+```bash
+runllm help rllm
+runllm help rllm --format text
+runllm help schema --format json
+```
+
 ## Exit behavior
 
 - Success returns exit code `0` and JSON output payload.
