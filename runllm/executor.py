@@ -13,7 +13,11 @@ from runllm.pyblocks import execute_python_block
 from runllm.stats import StatsStore
 from runllm.templating import render_template
 from runllm.utils import estimate_context_tokens, estimate_tokens
-from runllm.validation import parse_model_json_payload, validate_json_schema_instance
+from runllm.validation import (
+    extract_json_object_candidates,
+    parse_model_json_payload,
+    validate_json_schema_instance,
+)
 
 
 def _extract_content(response: Any) -> str:
@@ -180,13 +184,16 @@ def _run_single(
     for attempt in range(options.max_retries + 1):
         attempt_prompt = rendered_prompt
         if attempt > 0:
-            recovery = program.recovery_prompt or (
-                "Last attempt did not satisfy output_schema. Respond with only a valid JSON object that satisfies output_schema."
-            )
-            attempt_prompt = (
-                f"{rendered_prompt}\n\nOutput schema:\n{json.dumps(program.output_schema)}\n\n"
-                f"Recovery instruction:\n{recovery}"
-            )
+            if program.recovery_prompt:
+                attempt_prompt = f"{rendered_prompt}\n\nRecovery instruction:\n{program.recovery_prompt}"
+            else:
+                recovery = (
+                    "Last attempt did not satisfy output_schema. Respond with only a valid JSON object that satisfies output_schema."
+                )
+                attempt_prompt = (
+                    f"{rendered_prompt}\n\nOutput schema:\n{json.dumps(program.output_schema)}\n\n"
+                    f"Recovery instruction:\n{recovery}"
+                )
         content, usage = _litellm_completion_call(
             model=model,
             prompt=attempt_prompt,
@@ -194,8 +201,27 @@ def _run_single(
             completion_fn=completion_fn,
         )
         try:
-            out = parse_model_json_payload(content)
-            validate_json_schema_instance(instance=out, schema=program.output_schema, phase="output")
+            out: dict[str, Any] | None = None
+            candidates = extract_json_object_candidates(content)
+            if not candidates:
+                out = parse_model_json_payload(content)
+                validate_json_schema_instance(instance=out, schema=program.output_schema, phase="output")
+            else:
+                for candidate in candidates:
+                    try:
+                        validate_json_schema_instance(
+                            instance=candidate, schema=program.output_schema, phase="output"
+                        )
+                        out = candidate
+                        break
+                    except RunLLMError:
+                        continue
+                if out is None:
+                    # Preserve best diagnostics from the direct parser path.
+                    out = parse_model_json_payload(content)
+                    validate_json_schema_instance(instance=out, schema=program.output_schema, phase="output")
+
+            assert out is not None
             if program.python_post:
                 post = execute_python_block(
                     program.python_post,

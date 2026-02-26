@@ -1,0 +1,57 @@
+---
+name: policy_guard
+description: Check text against prohibited claims and required disclaimers.
+version: 0.1.0
+author: runllm
+max_context_window: 12000
+input_schema:
+  type: object
+  properties:
+    draft_text:
+      type: string
+    prohibited_claims:
+      type: array
+      items:
+        type: string
+    required_disclaimers:
+      type: array
+      items:
+        type: string
+  required: [draft_text, prohibited_claims, required_disclaimers]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    is_compliant:
+      type: boolean
+    violations:
+      type: array
+      items:
+        type: string
+    fixed_text:
+      type: string
+  required: [is_compliant, violations, fixed_text]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0
+  format: json
+recommended_models:
+  - ollama/llama3.1:8b
+  - ollama/gpt-oss:20b
+tags: [compliance, safety]
+---
+Evaluate compliance against policy rules and rewrite text if needed.
+
+Return ONLY JSON:
+{"is_compliant":true|false,"violations":["..."],"fixed_text":"..."}
+
+Draft text:
+{{input.draft_text}}
+
+Prohibited claims:
+{{input.prohibited_claims}}
+
+Required disclaimers:
+{{input.required_disclaimers}}

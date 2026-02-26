@@ -1,0 +1,110 @@
+---
+name: risk_score_aggregator
+description: Aggregate risk from policy, meeting, and routing signals.
+version: 0.1.0
+author: runllm
+max_context_window: 20000
+input_schema:
+  type: object
+  properties:
+    content_bundle:
+      type: object
+      properties:
+        ticket_text:
+          type: string
+        draft_text:
+          type: string
+        transcript:
+          type: string
+      required: [ticket_text, draft_text, transcript]
+      additionalProperties: false
+  required: [content_bundle]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    risk_score:
+      type: integer
+      minimum: 0
+      maximum: 100
+    score_breakdown:
+      type: object
+      properties:
+        compliance:
+          type: integer
+          minimum: 0
+          maximum: 100
+        operations:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sentiment:
+          type: integer
+          minimum: 0
+          maximum: 100
+      required: [compliance, operations, sentiment]
+      additionalProperties: false
+    recommendation:
+      type: string
+  required: [risk_score, score_breakdown, recommendation]
+  additionalProperties: false
+llm:
+  model: ollama/gpt-oss:20b
+llm_params:
+  temperature: 0
+  format: json
+uses:
+  - name: policy_guard
+    path: ./policy_guard.rllm
+    with:
+      draft_text: "{{input.content_bundle.draft_text}}"
+      prohibited_claims:
+        - guaranteed return
+        - zero risk
+      required_disclaimers:
+        - This is not financial advice.
+  - name: meeting_extractor
+    path: ./meeting_extractor.rllm
+    with:
+      transcript: "{{input.content_bundle.transcript}}"
+  - name: intent_router
+    path: ./intent_router.rllm
+    with:
+      text: "{{input.content_bundle.ticket_text}}"
+recommended_models:
+  - ollama/gpt-oss:20b
+tags: [aggregation, composition, risk]
+---
+Aggregate risk from dependency outputs.
+Return ONLY JSON object matching output schema.
+
+Important:
+- Output a JSON instance, not a JSON schema.
+- score_breakdown values must be integers 0..100.
+- recommendation must be a short actionable sentence.
+
+Policy:
+{{uses.policy_guard}}
+
+Meeting:
+{{uses.meeting_extractor}}
+
+Intent:
+{{uses.intent_router}}
+
+<<<RECOVERY>>>
+Previous response failed validation.
+Return ONLY JSON like:
+{"risk_score":42,"score_breakdown":{"compliance":40,"operations":55,"sentiment":30},"recommendation":"Escalate to compliance and support leads."}
+
+```rllm-python post
+# Deterministic post-step: recompute risk score from breakdown average.
+breakdown = context.get("output", {}).get("score_breakdown", {})
+vals = [
+    int(breakdown.get("compliance", 0)),
+    int(breakdown.get("operations", 0)),
+    int(breakdown.get("sentiment", 0)),
+]
+avg = max(0, min(100, int(sum(vals) / 3)))
+result = {"risk_score": avg}
+```

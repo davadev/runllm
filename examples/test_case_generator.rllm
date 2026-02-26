@@ -1,0 +1,52 @@
+---
+name: test_case_generator
+description: Generate unit and property-style tests from function contract.
+version: 0.1.0
+author: runllm
+max_context_window: 20000
+input_schema:
+  type: object
+  properties:
+    function_contract:
+      type: object
+    edge_conditions:
+      type: array
+      items:
+        type: string
+  required: [function_contract, edge_conditions]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    unit_tests:
+      type: array
+      items:
+        type: string
+    property_tests:
+      type: array
+      items:
+        type: string
+    invalid_inputs:
+      type: array
+      items:
+        type: string
+  required: [unit_tests, property_tests, invalid_inputs]
+  additionalProperties: false
+llm:
+  model: ollama/qwen2.5-coder:7b
+llm_params:
+  temperature: 0.1
+  format: json
+recommended_models:
+  - ollama/qwen2.5-coder:7b
+  - ollama/qwen2.5-coder-32k:latest
+tags: [testing, coding]
+---
+Generate test ideas for the provided contract.
+Return ONLY JSON object matching output schema.
+
+Function contract:
+{{input.function_contract}}
+
+Edge conditions:
+{{input.edge_conditions}}

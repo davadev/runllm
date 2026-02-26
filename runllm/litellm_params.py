@@ -22,6 +22,7 @@ ALLOWED_LLM_PARAMS = {
     "tools",
     "tool_choice",
     "parallel_tool_calls",
+    "format",
 }
 
 

@@ -1,0 +1,63 @@
+---
+name: meeting_extractor
+description: Extract decisions, risks, and action items from meeting transcript.
+version: 0.1.0
+author: runllm
+max_context_window: 14000
+input_schema:
+  type: object
+  properties:
+    transcript:
+      type: string
+  required: [transcript]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    summary:
+      type: string
+    decisions:
+      type: array
+      items:
+        type: string
+    action_items:
+      type: array
+      items:
+        type: object
+        properties:
+          owner: { type: string }
+          task: { type: string }
+          due_date:
+            type: [string, "null"]
+        required: [owner, task]
+        additionalProperties: false
+    risks:
+      type: array
+      items:
+        type: string
+  required: [summary, decisions, action_items, risks]
+  additionalProperties: false
+llm:
+  model: ollama/gemma3:12b
+llm_params:
+  temperature: 0.1
+  format: json
+recommended_models:
+  - ollama/gemma3:12b
+  - ollama/llama3.1:8b
+tags: [meeting, extraction]
+---
+Extract structured meeting notes from transcript.
+Return ONLY valid JSON object matching output schema.
+
+Important:
+- Output a JSON instance, not a schema.
+- If unknown, use empty arrays.
+- For action_items due_date, use null when missing.
+
+Transcript:
+{{input.transcript}}
+
+<<<RECOVERY>>>
+Previous output failed validation.
+Return ONLY JSON with keys: summary (string), decisions (string[]), action_items (array of {owner, task, due_date|null}), risks (string[]).

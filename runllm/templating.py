@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import json
 from typing import Any
 
 
@@ -22,7 +23,7 @@ def render_template(template: str, data: dict[str, Any]) -> str:
         key = match.group(1)
         value = _resolve_path(data, key)
         if isinstance(value, (dict, list)):
-            return str(value)
+            return json.dumps(value, ensure_ascii=True)
         return "" if value is None else str(value)
 
     return _TOKEN.sub(repl, template)

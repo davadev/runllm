@@ -1,0 +1,61 @@
+---
+name: code_patch_planner
+description: Produce a structured code change plan with files, risks, and tests.
+version: 0.1.0
+author: runllm
+max_context_window: 28000
+input_schema:
+  type: object
+  properties:
+    issue:
+      type: string
+    repo_context:
+      type: string
+    constraints:
+      type: array
+      items:
+        type: string
+  required: [issue, repo_context, constraints]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    plan_steps:
+      type: array
+      items:
+        type: string
+    files_to_touch:
+      type: array
+      items:
+        type: string
+    risks:
+      type: array
+      items:
+        type: string
+    tests_to_run:
+      type: array
+      items:
+        type: string
+  required: [plan_steps, files_to_touch, risks, tests_to_run]
+  additionalProperties: false
+llm:
+  model: ollama/qwen2.5-coder-32k:latest
+llm_params:
+  temperature: 0.1
+  format: json
+recommended_models:
+  - ollama/qwen2.5-coder-32k:latest
+  - ollama/qwen2.5-coder:7b
+tags: [coding, planning]
+---
+Generate a precise implementation plan.
+Return ONLY JSON object matching output schema.
+
+Issue:
+{{input.issue}}
+
+Repo context:
+{{input.repo_context}}
+
+Constraints:
+{{input.constraints}}

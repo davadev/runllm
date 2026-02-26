@@ -26,6 +26,7 @@ llm:
   model: openai/gpt-4o-mini
 llm_params:
   temperature: 0
+  format: json
 uses:
   - name: summary_app
     path: ./summary.rllm

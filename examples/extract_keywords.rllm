@@ -25,6 +25,7 @@ llm:
   model: openai/gpt-4o-mini
 llm_params:
   temperature: 0.0
+  format: json
 recommended_models:
   - openai/gpt-4o-mini
 ---

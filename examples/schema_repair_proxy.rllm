@@ -1,0 +1,58 @@
+---
+name: schema_repair_proxy
+description: Repair malformed model output into a valid target JSON structure.
+version: 0.1.0
+author: runllm
+max_context_window: 12000
+input_schema:
+  type: object
+  properties:
+    raw_model_output:
+      type: string
+    target_schema:
+      type: object
+    task_context:
+      type: string
+  required: [raw_model_output, target_schema, task_context]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    fixed_json:
+      type: object
+    repair_notes:
+      type: array
+      items:
+        type: string
+  required: [fixed_json, repair_notes]
+  additionalProperties: false
+llm:
+  model: ollama/gpt-oss-cc-35k:latest
+llm_params:
+  temperature: 0
+  format: json
+recommended_models:
+  - ollama/gpt-oss-cc-35k:latest
+tags: [repair, schema]
+---
+Repair raw output into valid JSON for the provided target schema.
+Return ONLY this JSON shape exactly:
+{"fixed_json": {"...": "..."}, "repair_notes": ["..."]}
+
+Important:
+- fixed_json must be an instance that follows target_schema
+- repair_notes must be plain strings explaining what was repaired
+- do not return the schema itself as the top-level object
+
+Task context:
+{{input.task_context}}
+
+Target schema:
+{{input.target_schema}}
+
+Raw output:
+{{input.raw_model_output}}
+
+<<<RECOVERY>>>
+Previous response was invalid.
+Return ONLY a JSON object with keys fixed_json (object) and repair_notes (string array).

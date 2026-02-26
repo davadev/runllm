@@ -1,0 +1,50 @@
+---
+name: support_reply_drafter
+description: Draft a concise customer support response from classified intent.
+version: 0.1.0
+author: runllm
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    ticket_text:
+      type: string
+    intent:
+      type: string
+      enum: [billing, technical, refund, sales, other]
+    customer_tone:
+      type: string
+      enum: [calm, neutral, upset]
+  required: [ticket_text, intent, customer_tone]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    reply:
+      type: string
+    urgency:
+      type: string
+      enum: [low, medium, high]
+    follow_up_needed:
+      type: boolean
+  required: [reply, urgency, follow_up_needed]
+  additionalProperties: false
+llm:
+  model: ollama/llama3.1:8b
+llm_params:
+  temperature: 0.2
+  format: json
+recommended_models:
+  - ollama/llama3.1:8b
+  - ollama/gemma3:12b
+tags: [support, drafting]
+---
+Draft a short, professional support response.
+
+Return ONLY JSON:
+{"reply":"...","urgency":"low|medium|high","follow_up_needed":true|false}
+
+Intent: {{input.intent}}
+Customer tone: {{input.customer_tone}}
+Ticket:
+{{input.ticket_text}}

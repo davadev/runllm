@@ -1,0 +1,45 @@
+---
+name: ocr_postprocessor
+description: Convert noisy OCR text into structured fields with confidence map.
+version: 0.1.0
+author: runllm
+max_context_window: 10000
+input_schema:
+  type: object
+  properties:
+    ocr_text:
+      type: string
+    doc_type:
+      type: string
+      enum: [invoice, receipt, id_card, other]
+  required: [ocr_text, doc_type]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    fields:
+      type: object
+    confidence_map:
+      type: object
+    anomalies:
+      type: array
+      items:
+        type: string
+  required: [fields, confidence_map, anomalies]
+  additionalProperties: false
+llm:
+  model: ollama/gemma3n:latest
+llm_params:
+  temperature: 0
+  format: json
+recommended_models:
+  - ollama/gemma3n:latest
+  - ollama/glm-ocr:latest
+tags: [ocr, extraction]
+---
+Normalize OCR text into a structured payload.
+Return ONLY JSON object matching output schema.
+
+Document type: {{input.doc_type}}
+OCR text:
+{{input.ocr_text}}
