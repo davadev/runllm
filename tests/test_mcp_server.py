@@ -339,3 +339,52 @@ def test_mcp_builds_registry_once_per_server_session(monkeypatch, tmp_path: Path
     asyncio.run(server.call_tool_handler("invoke_program", {"id": program_id, "input": {"text": "hello"}}))
 
     assert counter["calls"] == 1
+
+
+def test_mcp_list_programs_refresh_reloads_registry(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    baseline = asyncio.run(server.call_tool_handler("list_programs", {}))
+    _, baseline_payload = _decode_result(baseline)
+    assert baseline_payload["total"] == 1
+
+    _write_app(tmp_path / "userlib" / "billing" / "new_offer.rllm", name="new_offer", description="New offer summary")
+
+    stale = asyncio.run(server.call_tool_handler("list_programs", {}))
+    _, stale_payload = _decode_result(stale)
+    assert stale_payload["total"] == 1
+
+    refreshed = asyncio.run(server.call_tool_handler("list_programs", {"refresh": True}))
+    is_error, refreshed_payload = _decode_result(refreshed)
+    assert is_error is False
+    assert refreshed_payload["total"] == 2
+
+
+def test_mcp_list_programs_rejects_non_boolean_refresh(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("list_programs", {"refresh": "yes"}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is True
+    assert payload["ok"] is False
+    assert payload["error"]["error_code"] == "RLLM_002"
+
+
+def test_mcp_invoke_program_auto_refreshes_on_id_miss(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    new_app_path = tmp_path / "userlib" / "billing" / "late_added.rllm"
+    _write_app(new_app_path, name="late_added", description="Late added app")
+    program_id = "billing:userlib/billing/late_added.rllm"
+
+    monkeypatch.setattr(mcp_server, "run_program", lambda *_a, **_kw: {"ok": True, "summary": "done"})
+    result = asyncio.run(server.call_tool_handler("invoke_program", {"id": program_id, "input": {"text": "hello"}}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["id"] == program_id

@@ -44,12 +44,13 @@ runllm mcp serve --project rllmlib
 Registry behavior:
 
 - program registry is indexed once at server startup
-- restart MCP server to pick up newly added or edited `.rllm` files
+- use `list_programs` with `refresh: true` to reload newly added or edited `.rllm` files
+- `invoke_program` auto-retries once with an internal refresh when id is initially missing
 
 ## MCP tools (minimal)
 
 - `list_programs`
-  - optional inputs: `query`, `limit`, `cursor`
+  - optional inputs: `query`, `limit`, `cursor`, `refresh`
   - returns compact cards with:
     - `name`, `description`
     - `input_required` and `input_optional` with type hints
@@ -66,6 +67,12 @@ Registry behavior:
 3. Call `invoke_program` with the card's `invocation_template` adapted to task data.
 
 This keeps discovery flat and usually completes in 2 MCP calls.
+
+Refresh behavior:
+
+- `list_programs` uses startup index by default.
+- pass `refresh: true` to rebuild registry before listing.
+- `invoke_program` automatically performs one registry refresh retry when id is not found.
 
 ## Failure handling
 

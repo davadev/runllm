@@ -39,6 +39,11 @@ async def serve_mcp(
 
     root = (repo_root or Path.cwd()).resolve()
     registry_entries = build_registry(root)
+
+    def _refresh_registry() -> None:
+        nonlocal registry_entries
+        registry_entries = build_registry(root)
+
     server = Server("runllm")
 
     @server.list_tools()
@@ -65,6 +70,10 @@ async def serve_mcp(
                         "cursor": {
                             "type": "string",
                             "description": "Pagination cursor from previous response.",
+                        },
+                        "refresh": {
+                            "type": "boolean",
+                            "description": "Rebuild registry before listing programs.",
                         },
                     },
                 },
@@ -108,6 +117,22 @@ async def serve_mcp(
                             "doc_ref": "docs/errors.md#RLLM_002",
                         }
                     )
+                refresh_value = args.get("refresh", False)
+                if not isinstance(refresh_value, bool):
+                    return _err_payload(
+                        {
+                            "error_code": "RLLM_002",
+                            "error_type": "MetadataValidationError",
+                            "message": "list_programs refresh must be a boolean when provided.",
+                            "details": {"refresh_type": type(refresh_value).__name__},
+                            "expected_schema": None,
+                            "received_payload": arguments,
+                            "recovery_hint": "Pass refresh as true/false or omit it.",
+                            "doc_ref": "docs/errors.md#RLLM_002",
+                        }
+                    )
+                if refresh_value:
+                    _refresh_registry()
                 limit_value = args.get("limit", 25)
                 if isinstance(limit_value, bool):
                     return _err_payload(
@@ -153,6 +178,7 @@ async def serve_mcp(
                             "doc_ref": "docs/errors.md#RLLM_002",
                         }
                     )
+                cursor_for_registry: str | None = None
                 if cursor is not None:
                     if isinstance(cursor, bool):
                         return _err_payload(
@@ -197,12 +223,13 @@ async def serve_mcp(
                                 "doc_ref": "docs/errors.md#RLLM_002",
                             }
                         )
+                    cursor_for_registry = str(parsed_cursor)
                 result = list_programs_from_entries(
                     entries=registry_entries,
                     project=project,
                     query=query,
                     limit=limit,
-                    cursor=cursor,
+                    cursor=str(cursor_for_registry) if cursor_for_registry is not None else None,
                 )
                 return _ok_payload(**result)
 
@@ -255,6 +282,13 @@ async def serve_mcp(
                     project=project,
                     program_id=program_id,
                 )
+                if resolved is None:
+                    _refresh_registry()
+                    resolved = resolve_program_id_from_entries(
+                        entries=registry_entries,
+                        project=project,
+                        program_id=program_id,
+                    )
                 if resolved is None:
                     return _err_payload(
                         {

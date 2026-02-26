@@ -18,6 +18,8 @@ The format is inspired by Keep a Changelog and this project follows Semantic Ver
 - Recursive invocation template placeholders for required nested object fields and constrained arrays.
 - Array placeholder cap for large `minItems` schemas to keep discovery payloads compact.
 - MCP registry is built once per server session to reduce repeated filesystem/parse overhead.
+- Optional `refresh` input on `list_programs` to rebuild MCP registry without restarting server.
+- Automatic one-time registry refresh retry in `invoke_program` when id is initially missing.
 - Expanded MCP regression coverage in `tests/test_mcp_server.py` for validation, scoping, error paths, and autoload behavior.
 
 ## [0.1.0] - 2026-02-26

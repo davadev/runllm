@@ -171,6 +171,8 @@ Run one MCP server per project:
 runllm mcp serve --project runllm
 ```
 
+By default, program index is loaded at server start. Use MCP `list_programs` with `refresh: true` to reload newly added/edited apps without restarting.
+
 ## Live local testing with Ollama
 
 By default, tests that call real local models are skipped.

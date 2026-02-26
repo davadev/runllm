@@ -132,16 +132,11 @@ Status: planned.
   - `rllmlib/**/*.rllm` (treated as project `rllmlib`)
 - MCP server should run with fixed `--project` scope so agents only see one project catalog.
 
-### LLM-assisted organization
+### Discovery model
 
-Use LLM classification to group apps, for example by:
-
-- domain (support, coding, extraction, compliance)
-- task type (classification, summarization, planning, transformation)
-- schema shape family
-- complexity/latency profiles
-
-Output must remain deterministic enough for agents to navigate reliably.
+- Keep MCP discovery flat and deterministic.
+- No classifier/categorizer stage in Release 2 scope.
+- Focus on compact program cards with contract hints for direct selection.
 
 ### Context-window safety requirements
 

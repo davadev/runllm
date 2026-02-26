@@ -156,6 +156,7 @@ Behavior:
   - `userlib/<project>/**/*.rllm`
   - `rllmlib/**/*.rllm` (project name: `rllmlib`)
 - `list_programs` returns compact contract hints (required params and returns with types)
+- `list_programs` accepts optional `refresh` to rebuild the in-memory registry
 
 Examples:
 
