@@ -27,3 +27,16 @@ in the same PR/commit to preserve agent-scaffold reliability.
 
 - `llm.model` is now enforced during parse/validate (`RLLM_002`) instead of only at runtime.
 - Impact: apps that omitted `llm.model` and relied on `runllm run --model ...` now fail validation until `llm.model` is added to frontmatter.
+
+## v0.1 onboarding updates
+
+- `runllm onboard` now saves a reusable scaffold profile by default at `.runllm/scaffold-profile.json`.
+- New onboarding flags:
+  - `--scaffold-file PATH`
+  - `--no-save-scaffold`
+- Onboarding now captures extended model params:
+  - `temperature` (must be `>= 0`)
+  - optional `top_p` (must be in `(0, 1]`)
+  - `format` defaults to `json` unless explicitly overridden
+- Onboarding includes one bounded refinement pass before generating final app output.
+- JSON payload now includes `scaffold_file` when scaffold persistence is enabled.

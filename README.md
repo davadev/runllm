@@ -107,6 +107,13 @@ runllm onboard
 ```
 
 Onboarding is chat-style and can resume previous progress with `runllm onboard --resume`.
+It also saves reusable scaffold defaults to `.runllm/scaffold-profile.json` by default.
+
+Canonical stacked onboarding workflow example:
+- `examples/onboarding/onboarding_workflow.rllm`
+
+Copy-paste onboarding flows:
+- `docs/onboarding.md`
 
 1) Validate an app:
 
@@ -159,6 +166,7 @@ Run live Ollama integration tests:
 
 ```bash
 RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_examples_ollama_live.py
+RUNLLM_OLLAMA_TESTS=1 python3 -m pytest -q tests/test_onboarding_ollama_live.py
 ```
 
 Live tests validate schema/structure (not exact phrasing), because model text is non-deterministic.
@@ -197,6 +205,7 @@ See `examples/`.
 - Schema cookbook: `docs/schema-cookbook.md`
 - Recovery playbook: `docs/recovery-playbook.md`
 - CLI reference: `docs/cli.md`
+- Onboarding guide: `docs/onboarding.md`
 - Error reference: `docs/errors.md`
 - Composition guide: `docs/composition.md`
 - Multi-step apps guide: `docs/multistep-apps.md`

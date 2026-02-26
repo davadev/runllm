@@ -106,7 +106,7 @@ runllm help schema --format json
 Interactive chat-style onboarding flow to configure credentials and generate a first app.
 
 ```bash
-runllm [--no-config-autoload] onboard [--model model] [--resume] [--session-file path]
+runllm [--no-config-autoload] onboard [--model model] [--resume] [--session-file path] [--scaffold-file path] [--no-save-scaffold]
 ```
 
 Behavior:
@@ -116,12 +116,18 @@ Behavior:
 - optionally writes missing key to selected `.env` path after explicit confirmation
 - runs connectivity check
 - uses onboarding `.rllm` micro-app steps to draft purpose/prompt/recovery
+- includes one bounded refine pass (approve or revise one area)
 - scaffolds a first `.rllm` file and validates it
 - runs a sample execution using gathered sample input
+- writes reusable scaffold profile JSON by default
 
 Session options:
 - `--resume` load defaults from prior session state
 - `--session-file` custom state path (default: `.runllm/onboarding-session.json`)
+
+Scaffold options:
+- `--scaffold-file` custom scaffold output path (default: `.runllm/scaffold-profile.json`)
+- `--no-save-scaffold` opt out of writing scaffold profile file
 
 ## Exit behavior
 

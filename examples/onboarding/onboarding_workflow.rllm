@@ -9,20 +9,59 @@ input_schema:
   properties:
     preferred_provider: { type: string }
     priority: { type: string }
+    env_var_name: { type: string }
+    user_name: { type: string }
     raw_goal: { type: string }
-  required: [preferred_provider, priority, raw_goal]
+    task_size: { type: string, enum: [small, medium, large] }
+    expected_input_length: { type: string }
+    app_path: { type: string }
+    sample_input: { type: string }
+  required:
+    - preferred_provider
+    - priority
+    - env_var_name
+    - user_name
+    - raw_goal
+    - task_size
+    - expected_input_length
+    - app_path
+    - sample_input
   additionalProperties: false
 output_schema:
   type: object
   properties:
     provider: { type: string }
     model: { type: string }
+    credential_status: { type: string }
+    hello_message: { type: string }
     purpose: { type: string }
-    scaffold_plan:
+    schema_notes:
+      type: array
+      items: { type: string }
+      minItems: 2
+    context_window_rationale: { type: string }
+    prompt_preview: { type: string }
+    recovery_preview: { type: string }
+    validation_checklist:
       type: array
       items: { type: string }
       minItems: 3
-  required: [provider, model, purpose, scaffold_plan]
+    scaffold_plan:
+      type: array
+      items: { type: string }
+      minItems: 6
+  required:
+    - provider
+    - model
+    - credential_status
+    - hello_message
+    - purpose
+    - schema_notes
+    - context_window_rationale
+    - prompt_preview
+    - recovery_preview
+    - validation_checklist
+    - scaffold_plan
   additionalProperties: false
 llm:
   model: ollama/llama3.1:8b
@@ -35,21 +74,88 @@ uses:
     with:
       preferred_provider: "{{input.preferred_provider}}"
       priority: "{{input.priority}}"
+  - name: credentials
+    path: ./credential_check.rllm
+    with:
+      provider: "{{uses.provider.provider}}"
+      model: "{{uses.provider.model}}"
+      credential_present: true
+      env_var_name: "{{input.env_var_name}}"
+  - name: hello
+    path: ./hello_test.rllm
+    with:
+      user_name: "{{input.user_name}}"
   - name: goal
     path: ./app_goal_capture.rllm
     with:
       raw_goal: "{{input.raw_goal}}"
+  - name: input_schema
+    path: ./input_schema_builder.rllm
+    with:
+      purpose: "{{uses.goal.purpose}}"
+      required_inputs: [text]
+  - name: output_schema
+    path: ./output_schema_builder.rllm
+    with:
+      purpose: "{{uses.goal.purpose}}"
+      required_outputs: [result]
+  - name: context
+    path: ./context_window_picker.rllm
+    with:
+      task_size: "{{input.task_size}}"
+      expected_input_length: "{{input.expected_input_length}}"
+  - name: prompt
+    path: ./prompt_builder.rllm
+    with:
+      purpose: "{{uses.goal.purpose}}"
+      output_keys: [result]
+  - name: recovery
+    path: ./recovery_builder.rllm
+    with:
+      output_keys: [result]
+  - name: validation
+    path: ./validate_and_test.rllm
+    with:
+      app_path: "{{input.app_path}}"
+      sample_input: "{{input.sample_input}}"
+  - name: assembler
+    path: ./file_assembler.rllm
+    with:
+      app_name: "{{uses.goal.app_name_hint}}"
+      description: "{{uses.goal.purpose}}"
+      model: "{{uses.provider.model}}"
+      prompt: "{{uses.prompt.prompt}}"
+      recovery_prompt: "{{uses.recovery.recovery_prompt}}"
 tags: [onboarding, composition]
 ---
-Use dependency outputs to produce a concise onboarding scaffold plan.
-Return ONLY JSON object with keys provider, model, purpose, scaffold_plan.
+This is the canonical stacked onboarding workflow for Release 1.
+Summarize the composed onboarding run from provider selection through validation.
+Return ONLY JSON object with keys provider, model, credential_status, hello_message,
+purpose, schema_notes, context_window_rationale, prompt_preview, recovery_preview,
+validation_checklist, scaffold_plan.
 
 Provider recommendation:
 provider={{uses.provider.provider}}
 model={{uses.provider.model}}
 
+Credential guidance:
+status={{uses.credentials.status}}
+next_action={{uses.credentials.next_action}}
+
+Connectivity hello:
+{{uses.hello.message}}
+
 Goal refinement:
 purpose={{uses.goal.purpose}}
 
+Input schema notes={{uses.input_schema.notes}}
+Output schema notes={{uses.output_schema.notes}}
+Context rationale={{uses.context.rationale}}
+Prompt preview={{uses.prompt.prompt}}
+Recovery preview={{uses.recovery.recovery_prompt}}
+Validation checklist={{uses.validation.checklist}}
+
 <<<RECOVERY>>>
-Return ONLY JSON object with keys provider, model, purpose, scaffold_plan.
+Return ONLY JSON object with keys provider, model, credential_status, hello_message,
+purpose, schema_notes, context_window_rationale, prompt_preview, recovery_preview,
+validation_checklist, scaffold_plan.

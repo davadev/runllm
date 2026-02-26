@@ -460,6 +460,16 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Custom onboarding session state path",
     )
+    o_p.add_argument(
+        "--scaffold-file",
+        metavar="PATH",
+        help="Custom onboarding scaffold profile output path",
+    )
+    o_p.add_argument(
+        "--no-save-scaffold",
+        action="store_true",
+        help="Skip writing reusable scaffold profile file",
+    )
     o_p.set_defaults(func=cmd_onboard)
 
     h_p = sub.add_parser(

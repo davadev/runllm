@@ -71,3 +71,5 @@ def test_onboard_help_describes_resume_flags(capsys) -> None:
     assert exc.value.code == 0
     assert "--resume" in out
     assert "--session-file" in out
+    assert "--scaffold-file" in out
+    assert "--no-save-scaffold" in out

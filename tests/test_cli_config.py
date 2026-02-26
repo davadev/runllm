@@ -103,7 +103,10 @@ def test_no_config_autoload_is_passed_to_onboard_runs(tmp_path, monkeypatch, cap
             "summary",
             "8000",
             "0",
+            "",
+            "",
             str(tmp_path / "starter.rllm"),
+            "",
         ]
     )
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(responses))

@@ -24,6 +24,7 @@ Repository planning:
 
 ## Runtime usage and operations
 
+- `onboarding.md`
 - `cli.md`
 - `composition.md`
 - `multistep-apps.md`

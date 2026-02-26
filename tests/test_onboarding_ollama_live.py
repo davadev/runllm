@@ -42,7 +42,10 @@ def test_onboard_live_ollama_end_to_end(tmp_path, monkeypatch, capsys) -> None:
             "summary",  # output keys
             "8000",  # max_context_window
             "0",  # temperature
+            "",  # top_p
+            "",  # format
             str(generated),  # output path
+            "",  # approve draft
         ]
     )
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(responses))
@@ -55,6 +58,8 @@ def test_onboard_live_ollama_end_to_end(tmp_path, monkeypatch, capsys) -> None:
     assert payload["ok"] is True
     assert payload["provider"] == "ollama"
     assert payload["model"] == f"ollama/{model}"
+    assert payload["scaffold_file"]
+    assert Path(payload["scaffold_file"]).exists()
 
     assert generated.exists()
     text = generated.read_text(encoding="utf-8")
