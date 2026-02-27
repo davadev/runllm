@@ -193,7 +193,9 @@ Behavior:
 - upserts project MCP entry `mcp.<mcp-name>` for `runllm mcp serve --project <project>`
 - creates a builder agent file under `agent/<agent-file>` that uses only `mcp.runllm`
 - creates a project agent file under `agent/<project-agent-file>` (default: `<project>-agent.md`) that prefers `mcp.<mcp-name>` and allows only local file tools (`read`, `write`, `edit`, `glob`, `grep`)
-- sets project agent MCP permissions to explicit deny-all (`mcp.*: deny`) with scoped allow (`mcp.<mcp-name>: allow`)
+- auto-discovers MCP keys from `opencode.json` and writes explicit deny entries for each non-project MCP (`mcp.<other>: deny`)
+- sets project agent MCP permissions to explicit per-MCP deny for discovered non-project MCPs with scoped allow (`mcp.<mcp-name>: allow`)
+- generated agents do not enable `skill`
 - requires `--mcp-name` to match `[A-Za-z0-9_-]+`
 - requires `--agent-file` to be a plain filename (no paths, no `.`/`..`)
 - requires `--project-agent-file` (when provided) to be a plain filename (no paths, no `.`/`..`)

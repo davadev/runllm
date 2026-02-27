@@ -74,13 +74,15 @@ This command:
   - `runllm mcp serve --project <project>`
 - creates `agent/runllm-rllm-builder.md` (or `--agent-file`) with instructions to use only `mcp.runllm` for `.rllm` authoring and runllm docs guidance
 - creates `agent/<project>-agent.md` (or `--project-agent-file`) with instructions to prefer `mcp.<mcp-name>` for project tasks while allowing local file tools (`read`, `write`, `edit`, `glob`, `grep`)
+- auto-discovers existing MCP keys in `opencode.json` and adds explicit deny permissions for each non-project MCP in the generated project agent
+- generated agents do not enable `skill`
 
 Safety behavior:
 
 - preserves existing `mcp.runllm` and `mcp.<mcp-name>` values unless fields are missing
 - does not overwrite existing agent file content by default (builder and project agent files)
 - pass `--force` to overwrite both
-- project agent uses explicit MCP default-deny (`mcp.*: deny`) with allow only for scoped `mcp.<mcp-name>`
+- project agent uses explicit per-MCP deny for discovered non-project MCP entries with scoped allow for `mcp.<mcp-name>`
 
 Registry behavior:
 

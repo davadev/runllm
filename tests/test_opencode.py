@@ -55,15 +55,54 @@ def test_install_opencode_creates_mcp_entry_and_agent(tmp_path, monkeypatch, cap
     assert "list_programs" in text
     assert "invoke_program" in text
     assert "bash: true" in text
+    assert "skill:" not in text
 
     project_agent_file = Path(payload["project_agent_file"])
     assert project_agent_file.exists()
     assert project_agent_file.name == "billing-agent.md"
     project_text = project_agent_file.read_text(encoding="utf-8")
     assert "mcp.runllm-project" in project_text
-    assert "mcp.*: deny" in project_text
+    assert "mcp.runllm: deny" in project_text
+    assert "mcp.*: deny" not in project_text
     assert "read: true" in project_text
     assert "Use `mcp.runllm-project` first" in project_text
+
+
+def test_install_opencode_project_agent_explicitly_denies_discovered_mcps(tmp_path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    reset_runtime_config_for_tests()
+
+    opencode_root = tmp_path / "config" / "opencode"
+    opencode_root.mkdir(parents=True)
+    opencode_json = opencode_root / "opencode.json"
+    opencode_json.write_text(
+        json.dumps(
+            {
+                "$schema": "https://opencode.ai/config.json",
+                "mcp": {
+                    "external": {
+                        "type": "local",
+                        "command": ["external-mcp"],
+                        "enabled": True,
+                    }
+                },
+            },
+            ensure_ascii=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    code = main(["mcp", "install-opencode", "--project", "billing"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    payload = _read_payload(out)
+    project_text = Path(payload["project_agent_file"]).read_text(encoding="utf-8")
+    assert "mcp.external: deny" in project_text
+    assert "mcp.runllm: deny" in project_text
+    assert "mcp.runllm-project: allow" in project_text
 
 
 def test_install_opencode_preserves_existing_entry_without_force(tmp_path, monkeypatch, capsys) -> None:

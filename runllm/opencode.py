@@ -146,7 +146,6 @@ tools:
   edit: true
   glob: true
   grep: true
-  skill: true
   task: true
   todowrite: true
 permission:
@@ -157,7 +156,6 @@ permission:
   edit: allow
   glob: allow
   grep: allow
-  skill: allow
   task: allow
   todowrite: allow
 reasoning_effort: medium
@@ -188,7 +186,28 @@ You are the execution-capable runllm app builder. Build valid `.rllm` apps end-t
 """
 
 
-def _render_project_agent_content(mcp_name: str) -> str:
+def _render_project_agent_content(mcp_name: str, discovered_mcp_names: list[str] | None = None) -> str:
+    discovered = sorted(
+        {
+            name
+            for name in (discovered_mcp_names or [])
+            if isinstance(name, str) and _SAFE_MCP_NAME.fullmatch(name) is not None
+        }
+    )
+    denied_mcp_names = [name for name in discovered if name != mcp_name]
+    permission_lines = [f"  mcp.{name}: deny" for name in denied_mcp_names]
+    permission_lines.extend(
+        [
+            f"  mcp.{mcp_name}: allow",
+            "  read: allow",
+            "  write: allow",
+            "  edit: allow",
+            "  glob: allow",
+            "  grep: allow",
+        ]
+    )
+    permissions_block = "\n".join(permission_lines)
+
     return f"""---
 description: project execution agent limited to one scoped runllm MCP
 mode: primary
@@ -200,13 +219,7 @@ tools:
   glob: true
   grep: true
 permission:
-  mcp.*: deny
-  mcp.{mcp_name}: allow
-  read: allow
-  write: allow
-  edit: allow
-  glob: allow
-  grep: allow
+{permissions_block}
 reasoning_effort: medium
 temperature: 0.0
 ---
@@ -373,7 +386,7 @@ def install_opencode_integration(
             builder_agent_path.write_text(builder_agent_text, encoding="utf-8")
             builder_agent_changed = True
 
-    project_agent_text = _render_project_agent_content(mcp_key)
+    project_agent_text = _render_project_agent_content(mcp_key, discovered_mcp_names=list(mcp_payload.keys()))
     project_agent_changed = False
     if force or not project_agent_path.exists():
         if not project_agent_path.exists() or project_agent_path.read_text(encoding="utf-8") != project_agent_text:
