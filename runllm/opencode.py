@@ -12,6 +12,13 @@ from runllm.errors import make_error
 _SAFE_MCP_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
+def _default_project_agent_filename(project_name: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", project_name.strip()).strip(".-")
+    if not slug:
+        slug = "project"
+    return f"{slug}-agent.md"
+
+
 def _opencode_root() -> Path:
     xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
     base: Path
@@ -127,7 +134,7 @@ def _validated_runllm_bin(runllm_bin: str) -> str:
     return candidate
 
 
-def _render_agent_content(mcp_name: str) -> str:
+def _render_builder_agent_content(mcp_name: str) -> str:
     return f"""---
 description: runllm builder agent that scaffolds and validates .rllm apps
 mode: primary
@@ -181,12 +188,88 @@ You are the execution-capable runllm app builder. Build valid `.rllm` apps end-t
 """
 
 
+def _render_project_agent_content(mcp_name: str) -> str:
+    return f"""---
+description: project execution agent limited to one scoped runllm MCP
+mode: primary
+tools:
+  mcp.{mcp_name}: true
+  read: true
+  write: true
+  edit: true
+  glob: true
+  grep: true
+permission:
+  mcp.*: deny
+  mcp.{mcp_name}: allow
+  read: allow
+  write: allow
+  edit: allow
+  glob: allow
+  grep: allow
+reasoning_effort: medium
+temperature: 0.0
+---
+
+# Role
+You are the project execution agent for one scoped MCP only.
+
+# Rules
+1. Use `mcp.{mcp_name}` first for project task completion.
+2. Use `read`, `write`, `edit`, `glob`, and `grep` only when needed for local files.
+3. Start MCP discovery via `list_programs` or `list_workflows`.
+4. Use returned ids exactly as provided.
+5. Call `invoke_program` or `invoke_workflow` with JSON object input.
+6. Never assume hidden tools or cross-project MCP access.
+"""
+
+
+def _upsert_mcp_entry(
+    *,
+    mcp_payload: dict[str, Any],
+    mcp_key: str,
+    command: list[str],
+    force: bool,
+    trusted_workflows: bool,
+) -> bool:
+    desired_entry: dict[str, Any] = {
+        "type": "local",
+        "command": command,
+        "enabled": True,
+    }
+
+    changed = False
+    existing_entry = mcp_payload.get(mcp_key)
+    if force or not isinstance(existing_entry, dict):
+        if existing_entry != desired_entry:
+            mcp_payload[mcp_key] = desired_entry
+            changed = True
+        return changed
+
+    merged_entry = dict(existing_entry)
+    for key, value in desired_entry.items():
+        if key not in merged_entry:
+            merged_entry[key] = value
+    if trusted_workflows:
+        existing_command = merged_entry.get("command")
+        if isinstance(existing_command, list):
+            if "--trusted-workflows" not in [str(item) for item in existing_command]:
+                merged_entry["command"] = [*existing_command, "--trusted-workflows"]
+        else:
+            merged_entry["command"] = list(command)
+    if merged_entry != existing_entry:
+        mcp_payload[mcp_key] = merged_entry
+        changed = True
+    return changed
+
+
 def install_opencode_integration(
     *,
     project: str,
-    mcp_name: str = "runllm",
+    mcp_name: str = "runllm-project",
     runllm_bin: str = "runllm",
     agent_file: str = "runllm-rllm-builder.md",
+    project_agent_file: str | None = None,
     force: bool = False,
     trusted_workflows: bool = False,
 ) -> dict[str, Any]:
@@ -203,12 +286,42 @@ def install_opencode_integration(
 
     mcp_key = _validated_mcp_name(mcp_name)
     runllm_bin_value = _validated_runllm_bin(runllm_bin)
+    builder_mcp_key = "runllm"
 
     agent_filename = _validated_agent_filename(agent_file)
+    if project_agent_file is None:
+        project_agent_filename = _validated_agent_filename(_default_project_agent_filename(project_name))
+    else:
+        project_agent_filename = _validated_agent_filename(project_agent_file)
+    if project_agent_filename == agent_filename:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="builder and project agent files must be different filenames.",
+            details={"agent_file": agent_filename, "project_agent_file": project_agent_filename},
+            recovery_hint="Use distinct --agent-file and --project-agent-file values.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+
+    builder_command = [runllm_bin_value, "mcp", "serve", "--project", "runllm"]
+    project_command = [runllm_bin_value, "mcp", "serve", "--project", project_name]
+    if trusted_workflows:
+        project_command.append("--trusted-workflows")
+
+    if mcp_key == builder_mcp_key and project_name != "runllm":
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="project mcp name conflicts with reserved builder mcp name 'runllm'.",
+            details={"mcp_name": mcp_key, "project": project_name},
+            recovery_hint="Use --mcp-name with a value other than 'runllm' for project MCP scope.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
 
     opencode_root = _opencode_root()
     config_path = opencode_root / "opencode.json"
-    agent_path = opencode_root / "agent" / agent_filename
+    builder_agent_path = opencode_root / "agent" / agent_filename
+    project_agent_path = opencode_root / "agent" / project_agent_filename
 
     config_payload = _load_json_object(config_path)
     config_changed = False
@@ -232,55 +345,52 @@ def install_opencode_integration(
             doc_ref="docs/errors.md#RLLM_002",
         )
 
-    command = [runllm_bin_value, "mcp", "serve", "--project", project_name]
-    if trusted_workflows:
-        command.append("--trusted-workflows")
-
-    desired_entry: dict[str, Any] = {
-        "type": "local",
-        "command": command,
-        "enabled": True,
-    }
-
-    existing_entry = mcp_payload.get(mcp_key)
-    if force or not isinstance(existing_entry, dict):
-        if existing_entry != desired_entry:
-            mcp_payload[mcp_key] = desired_entry
-            config_changed = True
-    else:
-        merged_entry = dict(existing_entry)
-        for key, value in desired_entry.items():
-            if key not in merged_entry:
-                merged_entry[key] = value
-        if trusted_workflows:
-            existing_command = merged_entry.get("command")
-            if isinstance(existing_command, list):
-                if "--trusted-workflows" not in [str(item) for item in existing_command]:
-                    merged_entry["command"] = [*existing_command, "--trusted-workflows"]
-            else:
-                merged_entry["command"] = list(command)
-        if merged_entry != existing_entry:
-            mcp_payload[mcp_key] = merged_entry
-            config_changed = True
+    if _upsert_mcp_entry(
+        mcp_payload=mcp_payload,
+        mcp_key=builder_mcp_key,
+        command=builder_command,
+        force=force,
+        trusted_workflows=False,
+    ):
+        config_changed = True
+    if _upsert_mcp_entry(
+        mcp_payload=mcp_payload,
+        mcp_key=mcp_key,
+        command=project_command,
+        force=force,
+        trusted_workflows=trusted_workflows,
+    ):
+        config_changed = True
 
     if config_changed:
         _save_json(config_path, config_payload)
 
-    agent_text = _render_agent_content(mcp_key)
-    agent_changed = False
-    if force or not agent_path.exists():
-        if not agent_path.exists() or agent_path.read_text(encoding="utf-8") != agent_text:
-            agent_path.parent.mkdir(parents=True, exist_ok=True)
-            agent_path.write_text(agent_text, encoding="utf-8")
-            agent_changed = True
+    builder_agent_text = _render_builder_agent_content(builder_mcp_key)
+    builder_agent_changed = False
+    if force or not builder_agent_path.exists():
+        if not builder_agent_path.exists() or builder_agent_path.read_text(encoding="utf-8") != builder_agent_text:
+            builder_agent_path.parent.mkdir(parents=True, exist_ok=True)
+            builder_agent_path.write_text(builder_agent_text, encoding="utf-8")
+            builder_agent_changed = True
+
+    project_agent_text = _render_project_agent_content(mcp_key)
+    project_agent_changed = False
+    if force or not project_agent_path.exists():
+        if not project_agent_path.exists() or project_agent_path.read_text(encoding="utf-8") != project_agent_text:
+            project_agent_path.parent.mkdir(parents=True, exist_ok=True)
+            project_agent_path.write_text(project_agent_text, encoding="utf-8")
+            project_agent_changed = True
 
     return {
         "ok": True,
         "project": project_name,
         "mcp_name": mcp_key,
+        "builder_mcp_name": builder_mcp_key,
         "opencode_json": str(config_path),
-        "agent_file": str(agent_path),
+        "agent_file": str(builder_agent_path),
+        "project_agent_file": str(project_agent_path),
         "mcp_updated": config_changed,
-        "agent_updated": agent_changed,
+        "agent_updated": builder_agent_changed,
+        "project_agent_updated": project_agent_changed,
         "force": force,
     }

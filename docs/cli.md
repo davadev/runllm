@@ -184,18 +184,22 @@ runllm mcp serve --project rllmlib
 Install or update OpenCode MCP config for `runllm` and add an agent prompt file.
 
 ```bash
-runllm mcp install-opencode [--project name] [--mcp-name name] [--runllm-bin path_or_cmd] [--agent-file filename] [--force] [--trusted-workflows]
+runllm mcp install-opencode [--project name] [--mcp-name name] [--runllm-bin path_or_cmd] [--agent-file filename] [--project-agent-file filename] [--force] [--trusted-workflows]
 ```
 
 Behavior:
 - resolves OpenCode config at `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
-- upserts `opencode.json` `mcp.<mcp-name>` entry for `runllm mcp serve --project <project>`
-- creates a builder agent file under `agent/<agent-file>` with guidance to use `help_topic`, `list_programs`, `list_workflows`, `invoke_program`, and `invoke_workflow`
+- upserts builder MCP entry `mcp.runllm` for `runllm mcp serve --project runllm`
+- upserts project MCP entry `mcp.<mcp-name>` for `runllm mcp serve --project <project>`
+- creates a builder agent file under `agent/<agent-file>` that uses only `mcp.runllm`
+- creates a project agent file under `agent/<project-agent-file>` (default: `<project>-agent.md`) that prefers `mcp.<mcp-name>` and allows only local file tools (`read`, `write`, `edit`, `glob`, `grep`)
+- sets project agent MCP permissions to explicit deny-all (`mcp.*: deny`) with scoped allow (`mcp.<mcp-name>: allow`)
 - requires `--mcp-name` to match `[A-Za-z0-9_-]+`
 - requires `--agent-file` to be a plain filename (no paths, no `.`/`..`)
+- requires `--project-agent-file` (when provided) to be a plain filename (no paths, no `.`/`..`)
 - requires `--runllm-bin` to be a non-empty command/path
-- preserves existing `mcp.<mcp-name>` values unless fields are missing
-- use `--force` to overwrite existing `mcp.<mcp-name>` and agent file content
+- preserves existing `mcp.runllm` and `mcp.<mcp-name>` values unless fields are missing
+- use `--force` to overwrite MCP entries and both agent files
 
 Example:
 

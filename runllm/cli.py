@@ -192,6 +192,7 @@ def cmd_mcp_install_opencode(args: argparse.Namespace) -> int:
         mcp_name=args.mcp_name,
         runllm_bin=args.runllm_bin,
         agent_file=args.agent_file,
+        project_agent_file=args.project_agent_file,
         force=args.force,
         trusted_workflows=bool(getattr(args, "trusted_workflows", False)),
     )
@@ -410,8 +411,8 @@ def build_parser() -> argparse.ArgumentParser:
     m_install.add_argument(
         "--mcp-name",
         metavar="NAME",
-        default="runllm",
-        help="MCP entry key to upsert in opencode.json.",
+        default="runllm-project",
+        help="Project MCP entry key to upsert in opencode.json.",
     )
     m_install.add_argument(
         "--runllm-bin",
@@ -423,12 +424,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--agent-file",
         metavar="FILENAME",
         default="runllm-rllm-builder.md",
-        help="Agent filename created under OpenCode agent directory.",
+        help="Builder agent filename created under OpenCode agent directory.",
+    )
+    m_install.add_argument(
+        "--project-agent-file",
+        metavar="FILENAME",
+        default=None,
+        help="Project agent filename under OpenCode agent directory (default: <project>-agent.md).",
     )
     m_install.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing runllm MCP entry and agent file content.",
+        help="Overwrite existing builder/project MCP entries and both agent files.",
     )
     m_install.add_argument(
         "--trusted-workflows",

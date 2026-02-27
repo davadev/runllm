@@ -68,15 +68,19 @@ runllm mcp install-opencode --project runllm
 This command:
 
 - writes/updates `opencode.json` in `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
-- upserts `mcp.runllm` with command:
+- upserts builder entry `mcp.runllm` with command:
+  - `runllm mcp serve --project runllm`
+- upserts project entry `mcp.<mcp-name>` (default `runllm-project`) with command:
   - `runllm mcp serve --project <project>`
-- creates `agent/runllm-rllm-builder.md` with instructions for using `help_topic`, `list_programs`, `list_workflows`, `invoke_program`, and `invoke_workflow` to build `.rllm` apps
+- creates `agent/runllm-rllm-builder.md` (or `--agent-file`) with instructions to use only `mcp.runllm` for `.rllm` authoring and runllm docs guidance
+- creates `agent/<project>-agent.md` (or `--project-agent-file`) with instructions to prefer `mcp.<mcp-name>` for project tasks while allowing local file tools (`read`, `write`, `edit`, `glob`, `grep`)
 
 Safety behavior:
 
-- preserves existing `mcp.runllm` values unless fields are missing
-- does not overwrite existing agent file content by default
+- preserves existing `mcp.runllm` and `mcp.<mcp-name>` values unless fields are missing
+- does not overwrite existing agent file content by default (builder and project agent files)
 - pass `--force` to overwrite both
+- project agent uses explicit MCP default-deny (`mcp.*: deny`) with allow only for scoped `mcp.<mcp-name>`
 
 Registry behavior:
 
