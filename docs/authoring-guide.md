@@ -72,6 +72,16 @@ Return ONLY JSON object with keys intent and confidence.
 - Say "Return ONLY JSON object" once near top.
 - Include expected keys explicitly.
 - Keep instructions short and non-conflicting.
+- Keep schema compact; runtime now appends output schema + deterministic example on every attempt.
+
+## Runtime prompt contract
+
+At runtime, `runllm` appends an output contract to the model prompt on every attempt:
+- output schema JSON,
+- deterministic example output JSON,
+- strict JSON-only response instruction.
+
+This means app prompts should stay concise and task-focused; avoid duplicating long schema text in prompt body.
 
 ## Avoid
 

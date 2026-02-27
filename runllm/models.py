@@ -42,6 +42,9 @@ class RunOptions:
     ollama_auto_pull: bool = False
     trusted_python: bool = False
     python_memory_limit_mb: int = 256
+    debug_prompt_file: str | None = None
+    debug_prompt_stdout: bool = False
+    debug_prompt_wrap: int = 100
 
 
 @dataclass

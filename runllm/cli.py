@@ -84,6 +84,15 @@ def cmd_run(args: argparse.Namespace) -> int:
             recovery_hint="Set --python-memory-limit-mb to 0 or greater.",
             doc_ref="docs/errors.md#RLLM_002",
         )
+    if args.debug_prompt_wrap <= 0:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="debug_prompt_wrap must be a positive integer.",
+            details={"debug_prompt_wrap": args.debug_prompt_wrap},
+            recovery_hint="Set --debug-prompt-wrap to 1 or greater.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
     model = args.model or cfg.default_model
     if args.ollama_auto_pull is None:
         ollama_auto_pull = cfg.default_ollama_auto_pull
@@ -96,6 +105,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         ollama_auto_pull=ollama_auto_pull,
         trusted_python=args.trusted_python,
         python_memory_limit_mb=python_memory_limit_mb,
+        debug_prompt_file=args.debug_prompt_file,
+        debug_prompt_stdout=args.debug_prompt_stdout,
+        debug_prompt_wrap=args.debug_prompt_wrap,
     )
     output = run_program(
         args.file,
@@ -240,6 +252,23 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=256,
         help="Memory cap for untrusted python blocks; set 0 to disable",
+    )
+    run_p.add_argument(
+        "--debug-prompt-file",
+        metavar="PATH",
+        help="Write exact prompts sent to model to a formatted debug file",
+    )
+    run_p.add_argument(
+        "--debug-prompt-stdout",
+        action="store_true",
+        help="Print exact prompts sent to model to stderr (keeps JSON stdout clean)",
+    )
+    run_p.add_argument(
+        "--debug-prompt-wrap",
+        metavar="N",
+        type=int,
+        default=100,
+        help="Line wrap width used for prompt debug output",
     )
     run_p.set_defaults(func=cmd_run)
 

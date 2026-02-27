@@ -58,6 +58,7 @@ Related docs:
 
 - `RLLM_012` ContextWindowExceededError
   - Trigger: estimated prompt + input tokens exceed `max_context_window`.
+  - Note: runtime estimate includes appended output-contract text (schema + example) and retry recovery instruction.
   - Fix: shrink input or raise `max_context_window`.
 
 - `RLLM_013` RetryExhaustedError

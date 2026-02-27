@@ -14,7 +14,7 @@ Related docs:
 Execute a `.rllm` app.
 
 ```bash
-runllm [--no-config-autoload] run <file.rllm> [--input JSON] [--input-file path] [--model model] [--max-retries N] [--verbose] [--ollama-auto-pull] [--trusted-python] [--python-memory-limit-mb MB]
+runllm [--no-config-autoload] run <file.rllm> [--input JSON] [--input-file path] [--model model] [--max-retries N] [--verbose] [--ollama-auto-pull] [--trusted-python] [--python-memory-limit-mb MB] [--debug-prompt-file path] [--debug-prompt-stdout] [--debug-prompt-wrap N]
 ```
 
 Options:
@@ -26,6 +26,9 @@ Options:
 - `--ollama-auto-pull` allow `ollama pull` for missing models.
 - `--trusted-python` run python blocks with broad builtins.
 - `--python-memory-limit-mb` memory cap for untrusted python blocks (default: `256`; set `0` to disable).
+- `--debug-prompt-file` append exact prompts sent to model to a human-readable debug file.
+- `--debug-prompt-stdout` print exact prompts sent to model to stderr (so stdout remains pure JSON).
+- `--debug-prompt-wrap` wrap width for debug prompt rendering (default: `100`).
 
 Global options:
 - `--no-config-autoload` disable automatic loading of `.env` and config files.

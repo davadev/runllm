@@ -62,6 +62,9 @@ def test_run_help_describes_key_flags(capsys) -> None:
     assert "--trusted-python" in out
     assert "--python-memory-limit-mb" in out
     assert "--ollama-auto-pull" in out
+    assert "--debug-prompt-file" in out
+    assert "--debug-prompt-stdout" in out
+    assert "--debug-prompt-wrap" in out
 
 
 def test_onboard_help_describes_resume_flags(capsys) -> None:

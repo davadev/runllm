@@ -137,6 +137,15 @@ Behavior notes:
 - Missing paths resolve to empty string.
 - Dict/list values are rendered as JSON text.
 
+Runtime output contract behavior:
+
+- `runllm` appends an output contract block to model prompts on every attempt (including first attempt).
+- Contract block includes:
+  - output schema JSON
+  - deterministic example output JSON derived from schema
+  - strict instruction to return only one JSON object
+- On retries, runtime also appends recovery instruction (`<<<RECOVERY>>>` content when present, otherwise default recovery text).
+
 ## Composition (`uses`)
 
 `uses` lets a parent app execute child apps first.
@@ -161,8 +170,9 @@ Rules:
 
 Retries happen when output schema validation fails.
 
+- Output contract (schema + example + JSON-only rule) is present on all attempts.
 - With `<<<RECOVERY>>>` (or `recovery_prompt`), retries append your recovery instruction.
-- Without custom recovery, runtime appends schema + default recovery instruction.
+- Without custom recovery, retries append default recovery instruction.
 
 ## Python blocks
 
