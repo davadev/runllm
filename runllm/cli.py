@@ -178,7 +178,11 @@ def cmd_mcp_serve(args: argparse.Namespace) -> int:
         )
     from runllm.mcp_server import run_mcp_server
 
-    run_mcp_server(project=project, autoload_config=getattr(args, "_autoload_config", None))
+    run_mcp_server(
+        project=project,
+        autoload_config=getattr(args, "_autoload_config", None),
+        trusted_workflows=bool(getattr(args, "trusted_workflows", False)),
+    )
     return 0
 
 
@@ -189,6 +193,7 @@ def cmd_mcp_install_opencode(args: argparse.Namespace) -> int:
         runllm_bin=args.runllm_bin,
         agent_file=args.agent_file,
         force=args.force,
+        trusted_workflows=bool(getattr(args, "trusted_workflows", False)),
     )
     _print_json(payload)
     return 0
@@ -369,7 +374,10 @@ def build_parser() -> argparse.ArgumentParser:
     m_serve = m_sub.add_parser(
         "serve",
         help="Serve MCP tools for one project",
-        description="Start MCP stdio server exposing list_programs and invoke_program for one project scope.",
+        description=(
+            "Start MCP stdio server exposing list/invoke tools for programs and workflows "
+            "for one project scope."
+        ),
         formatter_class=_HelpFormatter,
     )
     m_serve.add_argument(
@@ -377,6 +385,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME",
         required=True,
         help="Project scope name (userlib/<project> or rllmlib).",
+    )
+    m_serve.add_argument(
+        "--trusted-workflows",
+        action="store_true",
+        help="Enable invoke_workflow execution of Python workflow entrypoints (trusted repos only).",
     )
     m_serve.set_defaults(func=cmd_mcp_serve)
 
@@ -416,6 +429,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Overwrite existing runllm MCP entry and agent file content.",
+    )
+    m_install.add_argument(
+        "--trusted-workflows",
+        action="store_true",
+        help="Include --trusted-workflows in installed MCP command.",
     )
     m_install.set_defaults(func=cmd_mcp_install_opencode)
 

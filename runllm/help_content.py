@@ -8,6 +8,7 @@ HELP_TOPICS: tuple[str, ...] = (
     "rllm",
     "schema",
     "recovery",
+    "composition",
     "examples",
     "credentials",
     "config",
@@ -101,6 +102,41 @@ def help_topics_text() -> dict[str, str]:
             Do not include markdown, prose, or schema definitions.
             """
         ).strip(),
+        "composition": textwrap.dedent(
+            """
+            Composed app playbook
+
+            Stage contract checklist:
+            - One stage = one responsibility.
+            - Keep input/output schemas minimal and strict.
+            - Keep downstream-required keys stable.
+            - Define retryable vs non-retryable failures.
+            - Prefer deterministic verification for extracted evidence.
+
+            Composition interface rules:
+            - Preserve stable key names across stage boundaries.
+            - Prefer additive schema evolution over key renames.
+            - Keep provenance fields in intermediate artifacts when relevant.
+            - Avoid hidden coupling to free-form prose formats.
+
+            Evidence lifecycle pattern:
+            - retrieved -> filtered -> verified -> synthesized
+            - final synthesis should consume verified evidence only
+
+            Runtime budgeting and parallelism:
+            - Cap early discovery fan-out (planned questions/leads).
+            - Avoid late-stage truncation of already verified evidence.
+            - Parallelize independent retrieval branches.
+            - Merge with deterministic ordering + dedupe keys.
+            - Add sequential fallback for transient parallel failures.
+
+            Suggested docs:
+            - docs/composition.md
+            - docs/multistep-apps.md
+            - docs/authoring-guide.md
+            - docs/schema-cookbook.md
+            """
+        ).strip(),
         "examples": textwrap.dedent(
             """
             Example command flow
@@ -191,6 +227,40 @@ def help_topics_json() -> dict[str, Any]:
                 "List exact expected keys",
                 "Forbid prose/markdown/schema definitions",
             ]
+        },
+        "composition": {
+            "stage_contract_checklist": [
+                "One stage has one primary responsibility",
+                "Input/output schemas are minimal and strict",
+                "Downstream-required keys are stable",
+                "Failure behavior is explicit",
+                "Deterministic verification is preferred when possible",
+            ],
+            "interface_rules": [
+                "Keep intermediate key names stable across stages",
+                "Prefer additive schema evolution",
+                "Preserve provenance fields in evidence artifacts",
+                "Avoid hidden coupling to prose conventions",
+            ],
+            "evidence_lifecycle": [
+                "retrieved",
+                "filtered",
+                "verified",
+                "synthesized",
+            ],
+            "runtime_guidance": [
+                "Cap discovery fan-out early",
+                "Avoid truncating verified evidence late",
+                "Parallelize independent retrieval",
+                "Merge deterministically with dedupe",
+                "Fallback to sequential on transient parallel failures",
+            ],
+            "docs": [
+                "docs/composition.md",
+                "docs/multistep-apps.md",
+                "docs/authoring-guide.md",
+                "docs/schema-cookbook.md",
+            ],
         },
         "examples": {
             "commands": [

@@ -90,6 +90,20 @@ required: [is_compliant, violations, fixed_text]
 additionalProperties: false
 ```
 
+## Evidence artifact (provenance-safe)
+
+```yaml
+type: object
+properties:
+  quote_text: { type: string }
+  source_path: { type: string }
+  source_uid: { type: string }
+required: [quote_text, source_path, source_uid]
+additionalProperties: false
+```
+
+Use this shape for intermediate evidence stages so downstream verification and synthesis can remain deterministic.
+
 ## Anti-patterns
 
 - Missing `required` list.
@@ -102,3 +116,4 @@ additionalProperties: false
 - Prefer enums to free-form strings where possible.
 - Use nullable fields (`type: [string, "null"]`) when information may be absent.
 - Keep key names short and stable across versions.
+- For composed workflows, keep intermediate contracts normalized across branches.

@@ -19,12 +19,22 @@ Related docs:
 5. Add `<<<RECOVERY>>>` with explicit correction instructions.
 6. Set conservative `llm_params` (`temperature: 0`, `format: json` when available).
 
+## Stage contract checklist
+
+Use this checklist for every stage in a composed workflow:
+
+1. One stage = one primary responsibility.
+2. Input/output schemas are minimal, strict, and explicit.
+3. Downstream-required fields are present with stable key names.
+4. Failure behavior is explicit (retryable vs non-retryable).
+5. Stage output is verifiable by deterministic checks where possible.
+
 ## Gold template
 
 ```yaml
 ---
-name: classify_ticket
-description: Classify support ticket into one intent.
+name: classify_request
+description: Classify an input request into one intent.
 version: 0.1.0
 author: team
 max_context_window: 6000
@@ -40,7 +50,7 @@ output_schema:
   properties:
     intent:
       type: string
-      enum: [billing, technical, refund, sales, other]
+      enum: [type_a, type_b, type_c, other]
     confidence:
       type: number
       minimum: 0
@@ -56,10 +66,10 @@ recommended_models:
   - ollama/llama3.1:8b
 tags: [classification]
 ---
-Classify the ticket.
+Classify the request.
 Return ONLY JSON object with keys intent and confidence.
 
-Ticket:
+Input:
 {{input.text}}
 
 <<<RECOVERY>>>
@@ -82,6 +92,13 @@ At runtime, `runllm` appends an output contract to the model prompt on every att
 - strict JSON-only response instruction.
 
 This means app prompts should stay concise and task-focused; avoid duplicating long schema text in prompt body.
+
+## Runtime budgeting guidance
+
+- Cap discovery fan-out early (for example, number of planned questions/leads).
+- Avoid aggressive evidence truncation late in the pipeline once evidence is verified.
+- Measure stage timings during development and track dominant latency contributors.
+- Set stage timeouts based on expected payload size rather than one global default.
 
 ## Avoid
 

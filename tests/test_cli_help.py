@@ -42,6 +42,16 @@ def test_help_topic_schema_json(capsys) -> None:
     assert "recommendations" in payload["content"]
 
 
+def test_help_topic_composition_json(capsys) -> None:
+    code = main(["help", "composition", "--format", "json"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    payload = json.loads(out)
+    assert payload["topic"] == "composition"
+    assert "stage_contract_checklist" in payload["content"]
+
+
 def test_top_level_help_includes_help_command(capsys) -> None:
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
@@ -85,8 +95,9 @@ def test_mcp_help_describes_project_scope(capsys) -> None:
     out = capsys.readouterr().out
 
     assert exc.value.code == 0
-    assert "list_programs" in out
+    assert "list/invoke tools" in out
     assert "--project" in out
+    assert "--trusted-workflows" in out
 
 
 def test_mcp_help_includes_install_opencode(capsys) -> None:

@@ -26,6 +26,16 @@ Notes:
 - Files directly under `userlib/` are ignored.
 - `examples/` is not part of MCP discovery.
 
+Workflow entrypoint discovery:
+
+- `workflow.yaml` files under a project scope are indexed as MCP workflows.
+- A workflow spec must include:
+  - `name` (string)
+  - `description` (string)
+  - `entrypoint` (`relative/path.py:function_name`)
+  - `input_schema` (JSON Schema object)
+  - `output_schema` (JSON Schema object)
+
 ## Start server
 
 Use stdio MCP server mode and scope one project per server instance.
@@ -34,10 +44,16 @@ Use stdio MCP server mode and scope one project per server instance.
 runllm mcp serve --project runllm
 ```
 
+Enable trusted workflow execution (`invoke_workflow`) only for repositories you trust:
+
+```bash
+runllm mcp serve --project runllm --trusted-workflows
+```
+
 Common scope examples:
 
 ```bash
-runllm mcp serve --project billing
+runllm mcp serve --project project_a
 runllm mcp serve --project rllmlib
 ```
 
@@ -54,7 +70,7 @@ This command:
 - writes/updates `opencode.json` in `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
 - upserts `mcp.runllm` with command:
   - `runllm mcp serve --project <project>`
-- creates `agent/runllm-rllm-builder.md` with instructions for using `help_topic`, `list_programs`, and `invoke_program` to build `.rllm` apps
+- creates `agent/runllm-rllm-builder.md` with instructions for using `help_topic`, `list_programs`, `list_workflows`, `invoke_program`, and `invoke_workflow` to build `.rllm` apps
 
 Safety behavior:
 
@@ -80,20 +96,28 @@ Registry behavior:
 - `invoke_program`
   - required inputs: `id`, `input`
   - runs one scoped app with JSON input
+- `list_workflows`
+  - optional inputs: `query`, `limit`, `cursor`, `refresh`
+  - returns project-scoped workflow entrypoints (one-call orchestration interfaces)
+- `invoke_workflow`
+  - required inputs: `id`, `input`
+  - validates input against workflow schema, runs workflow entrypoint, validates output schema
+  - requires server startup flag `--trusted-workflows`
 - `help_topic`
   - required input: `topic`
   - optional input: `format` (`json` default, or `text`)
   - returns canonical runllm authoring guidance for topic:
-    - `rllm`, `schema`, `recovery`, `examples`, `credentials`, `config`
+    - `rllm`, `schema`, `recovery`, `composition`, `examples`, `credentials`, `config`
 
 ## Agent-friendly flow
 
-1. Call `help_topic` for `rllm`, `schema`, and `recovery`.
+1. Call `help_topic` for `rllm`, `schema`, `recovery`, and `composition`.
 2. Call `list_programs` with optional `query`.
-3. Pick one id from returned cards.
-4. Call `invoke_program` with the card's `invocation_template` adapted to task data.
+3. For single-call project orchestration, call `list_workflows` and pick one id.
+4. Call `invoke_workflow` with the workflow `invocation_template` adapted to task data.
+5. For direct app calls, use `list_programs` + `invoke_program`.
 
-This keeps discovery flat and usually completes in 3 MCP calls.
+This keeps discovery flat and usually completes in 3-5 MCP calls depending on whether workflow invocation is needed.
 
 Refresh behavior:
 

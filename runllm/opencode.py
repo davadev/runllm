@@ -188,6 +188,7 @@ def install_opencode_integration(
     runllm_bin: str = "runllm",
     agent_file: str = "runllm-rllm-builder.md",
     force: bool = False,
+    trusted_workflows: bool = False,
 ) -> dict[str, Any]:
     project_name = project.strip()
     if not project_name:
@@ -231,9 +232,13 @@ def install_opencode_integration(
             doc_ref="docs/errors.md#RLLM_002",
         )
 
+    command = [runllm_bin_value, "mcp", "serve", "--project", project_name]
+    if trusted_workflows:
+        command.append("--trusted-workflows")
+
     desired_entry: dict[str, Any] = {
         "type": "local",
-        "command": [runllm_bin_value, "mcp", "serve", "--project", project_name],
+        "command": command,
         "enabled": True,
     }
 
@@ -247,6 +252,13 @@ def install_opencode_integration(
         for key, value in desired_entry.items():
             if key not in merged_entry:
                 merged_entry[key] = value
+        if trusted_workflows:
+            existing_command = merged_entry.get("command")
+            if isinstance(existing_command, list):
+                if "--trusted-workflows" not in [str(item) for item in existing_command]:
+                    merged_entry["command"] = [*existing_command, "--trusted-workflows"]
+            else:
+                merged_entry["command"] = list(command)
         if merged_entry != existing_entry:
             mcp_payload[mcp_key] = merged_entry
             config_changed = True

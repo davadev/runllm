@@ -244,3 +244,52 @@ def test_install_opencode_trims_runllm_bin_value(tmp_path, monkeypatch, capsys) 
     payload = _read_payload(out)
     config_payload = json.loads(Path(payload["opencode_json"]).read_text(encoding="utf-8"))
     assert config_payload["mcp"]["runllm"]["command"][0] == "runllm"
+
+
+def test_install_opencode_can_enable_trusted_workflows_flag(tmp_path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    reset_runtime_config_for_tests()
+
+    code = main(["mcp", "install-opencode", "--project", "billing", "--trusted-workflows"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    payload = _read_payload(out)
+    config_payload = json.loads(Path(payload["opencode_json"]).read_text(encoding="utf-8"))
+    assert "--trusted-workflows" in config_payload["mcp"]["runllm"]["command"]
+
+
+def test_install_opencode_trusted_workflows_updates_existing_command_without_force(tmp_path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    reset_runtime_config_for_tests()
+
+    opencode_root = tmp_path / "config" / "opencode"
+    opencode_root.mkdir(parents=True)
+    opencode_json = opencode_root / "opencode.json"
+    opencode_json.write_text(
+        json.dumps(
+            {
+                "$schema": "https://opencode.ai/config.json",
+                "mcp": {
+                    "runllm": {
+                        "type": "local",
+                        "command": ["runllm", "mcp", "serve", "--project", "billing"],
+                        "enabled": True,
+                    }
+                },
+            },
+            ensure_ascii=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    code = main(["mcp", "install-opencode", "--project", "billing", "--trusted-workflows"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    payload = _read_payload(out)
+    config_payload = json.loads(opencode_json.read_text(encoding="utf-8"))
+    assert "--trusted-workflows" in config_payload["mcp"]["runllm"]["command"]
+    assert payload["mcp_updated"] is True

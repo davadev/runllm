@@ -104,6 +104,7 @@ Topics:
 - `rllm`
 - `schema`
 - `recovery`
+- `composition`
 - `examples`
 - `credentials`
 - `config`
@@ -152,15 +153,24 @@ Start minimal MCP stdio server for one project scope.
 runllm mcp serve --project <name>
 ```
 
+To enable Python workflow entrypoint execution via `invoke_workflow` (trusted repositories only):
+
+```bash
+runllm mcp serve --project <name> --trusted-workflows
+```
+
 Behavior:
-- serves three tools: `list_programs`, `invoke_program`, `help_topic`
+- serves MCP tools: `list_programs`, `invoke_program`, `list_workflows`, `invoke_workflow`, `help_topic`
 - scope is fixed to one project per process
 - programs are discovered from:
   - `userlib/<project>/**/*.rllm`
   - `rllmlib/**/*.rllm` (project name: `rllmlib`)
 - `list_programs` returns compact contract hints (required params and returns with types)
 - `list_programs` accepts optional `refresh` to rebuild the in-memory registry
-- `help_topic` returns runllm authoring guidance for one topic (`rllm`, `schema`, `recovery`, `examples`, `credentials`, `config`)
+- `list_workflows` returns project-scoped workflow entrypoints for one-call orchestration
+- `invoke_workflow` runs one workflow with typed input/output validation
+- `invoke_workflow` is disabled unless server starts with `--trusted-workflows`
+- `help_topic` returns runllm authoring guidance for one topic (`rllm`, `schema`, `recovery`, `composition`, `examples`, `credentials`, `config`)
 
 Examples:
 
@@ -174,13 +184,13 @@ runllm mcp serve --project rllmlib
 Install or update OpenCode MCP config for `runllm` and add an agent prompt file.
 
 ```bash
-runllm mcp install-opencode [--project name] [--mcp-name name] [--runllm-bin path_or_cmd] [--agent-file filename] [--force]
+runllm mcp install-opencode [--project name] [--mcp-name name] [--runllm-bin path_or_cmd] [--agent-file filename] [--force] [--trusted-workflows]
 ```
 
 Behavior:
 - resolves OpenCode config at `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
 - upserts `opencode.json` `mcp.<mcp-name>` entry for `runllm mcp serve --project <project>`
-- creates a builder agent file under `agent/<agent-file>` with guidance to use `help_topic`, `list_programs`, and `invoke_program`
+- creates a builder agent file under `agent/<agent-file>` with guidance to use `help_topic`, `list_programs`, `list_workflows`, `invoke_program`, and `invoke_workflow`
 - requires `--mcp-name` to match `[A-Za-z0-9_-]+`
 - requires `--agent-file` to be a plain filename (no paths, no `.`/`..`)
 - requires `--runllm-bin` to be a non-empty command/path
@@ -191,6 +201,12 @@ Example:
 
 ```bash
 runllm mcp install-opencode --project runllm
+```
+
+To install OpenCode MCP command with workflow execution enabled:
+
+```bash
+runllm mcp install-opencode --project runllm --trusted-workflows
 ```
 
 ## Exit behavior

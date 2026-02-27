@@ -64,6 +64,8 @@ This repo does not currently define dedicated lint or formatter tools in `pyproj
   - `python3 -m runllm.cli stats examples/summary.rllm`
 - Show MCP command help:
   - `python3 -m runllm.cli mcp serve --help`
+- Start MCP server with trusted workflow execution (trusted repos only):
+  - `python3 -m runllm.cli mcp serve --project runllm --trusted-workflows`
 
 ## Repository Layout
 
@@ -72,7 +74,9 @@ This repo does not currently define dedicated lint or formatter tools in `pyproj
 - Example apps: `examples/`
 - User app libraries for MCP discovery:
   - `userlib/<project_name>/**/*.rllm`
+  - `userlib/<project_name>/**/workflow.yaml`
   - `rllmlib/**/*.rllm` (project name `rllmlib`)
+  - `rllmlib/**/workflow.yaml`
 - Project docs: `docs/`
 
 Key implementation files:
@@ -85,6 +89,7 @@ Key implementation files:
 - `runllm/stats.py` SQLite stats storage and aggregation
 - `runllm/mcp_server.py` MCP stdio server and tool handlers
 - `runllm/mcp_registry.py` MCP app discovery/indexing and contract summary generation
+- `runllm/mcp_workflow_registry.py` MCP workflow discovery/indexing
 
 ## Code Style Guidelines
 
@@ -144,6 +149,8 @@ Follow existing style in this codebase.
   - `0` success
   - `1` failure
 - New CLI flags must be reflected in `docs/cli.md`.
+- Keep workflow execution over MCP behind explicit trust opt-in (`--trusted-workflows`).
+- Ensure MCP tool discovery reflects enabled capabilities (do not advertise disabled tools).
 
 ### Stats and Persistence
 
@@ -173,6 +180,7 @@ Minimum docs to evaluate:
 - `docs/errors.md`
 - `docs/migration.md` (when compatibility/version behavior changes)
 - `docs/composition.md` (if `uses` behavior changed)
+- `docs/mcp.md` (if MCP tools/registry/workflow behavior changed)
 
 ## Change Management Notes
 
@@ -186,6 +194,7 @@ Minimum docs to evaluate:
 Use this branch strategy for all coding-agent changes.
 
 Current active release branch: `release/0.2`
+Current working feature branch: `feature/mcp-project-scoped-discovery`
 
 ### Branches
 

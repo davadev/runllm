@@ -43,6 +43,165 @@ Return JSON only.
     path.write_text(content, encoding="utf-8")
 
 
+def _write_workflow(project_dir: Path) -> Path:
+    runner_path = project_dir / "workflow" / "runner.py"
+    runner_path.parent.mkdir(parents=True, exist_ok=True)
+    runner_path.write_text(
+        """
+from __future__ import annotations
+
+from typing import Any
+
+
+def run_workflow(input_payload: dict[str, Any]) -> dict[str, Any]:
+    query = str(input_payload.get("query", ""))
+    return {
+        "query": query,
+        "report_markdown": f"# {query}",
+        "timings_seconds": {"total": 0.1},
+    }
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    spec_path = project_dir / "workflow.yaml"
+    spec_path.write_text(
+        """
+name: project_main
+description: Project workflow entrypoint.
+entrypoint: workflow/runner.py:run_workflow
+input_schema:
+  type: object
+  properties:
+    query: { type: string }
+  required: [query]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    query: { type: string }
+    report_markdown: { type: string }
+    timings_seconds:
+      type: object
+      additionalProperties: { type: number }
+  required: [query, report_markdown, timings_seconds]
+  additionalProperties: false
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    return spec_path
+
+
+def _write_workflow_with_relative_import(project_dir: Path) -> Path:
+    workflow_dir = project_dir / "workflow"
+    workflow_dir.mkdir(parents=True, exist_ok=True)
+    (workflow_dir / "helpers.py").write_text(
+        """
+from __future__ import annotations
+
+
+def render_heading(query: str) -> str:
+    return f"# {query}"
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    (workflow_dir / "runner.py").write_text(
+        """
+from __future__ import annotations
+
+from .helpers import render_heading
+
+
+def run_workflow(input_payload):
+    query = str(input_payload.get("query", ""))
+    return {
+        "query": query,
+        "report_markdown": render_heading(query),
+        "timings_seconds": {"total": 0.1},
+    }
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    spec_path = project_dir / "workflow.yaml"
+    spec_path.write_text(
+        """
+name: project_main
+description: Project workflow entrypoint.
+entrypoint: workflow/runner.py:run_workflow
+input_schema:
+  type: object
+  properties:
+    query: { type: string }
+  required: [query]
+  additionalProperties: false
+output_schema:
+  type: object
+  properties:
+    query: { type: string }
+    report_markdown: { type: string }
+    timings_seconds:
+      type: object
+      additionalProperties: { type: number }
+  required: [query, report_markdown, timings_seconds]
+  additionalProperties: false
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    return spec_path
+
+
+def _write_workflow_with_schema(project_dir: Path, *, input_schema_yaml: str) -> Path:
+    runner_path = project_dir / "workflow" / "runner.py"
+    runner_path.parent.mkdir(parents=True, exist_ok=True)
+    runner_path.write_text(
+        """
+from __future__ import annotations
+
+from typing import Any
+
+
+def run_workflow(input_payload: dict[str, Any]) -> dict[str, Any]:
+    value = str(input_payload.get("ticket_id", ""))
+    return {
+        "query": value,
+        "report_markdown": f"# {value}",
+        "timings_seconds": {"total": 0.1},
+    }
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+    spec_path = project_dir / "workflow.yaml"
+    spec_path.write_text(
+        "\n".join(
+            [
+                "name: project_main",
+                "description: Project workflow entrypoint.",
+                "entrypoint: workflow/runner.py:run_workflow",
+                "input_schema:",
+                input_schema_yaml,
+                "output_schema:",
+                "  type: object",
+                "  properties:",
+                "    query: { type: string }",
+                "    report_markdown: { type: string }",
+                "    timings_seconds:",
+                "      type: object",
+                "      additionalProperties: { type: number }",
+                "  required: [query, report_markdown, timings_seconds]",
+                "  additionalProperties: false",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return spec_path
+
+
 @dataclass
 class _FakeTextContent:
     type: str
@@ -128,9 +287,23 @@ def _decode_result(result: _FakeCallToolResult) -> tuple[bool, dict[str, Any]]:
     return result.isError, payload
 
 
-def _boot_server(monkeypatch, tmp_path: Path, *, project: str, autoload_config: bool | None = None) -> _FakeServer:
+def _boot_server(
+    monkeypatch,
+    tmp_path: Path,
+    *,
+    project: str,
+    autoload_config: bool | None = None,
+    trusted_workflows: bool = False,
+) -> _FakeServer:
     _install_fake_mcp(monkeypatch)
-    asyncio.run(mcp_server.serve_mcp(project=project, repo_root=tmp_path, autoload_config=autoload_config))
+    asyncio.run(
+        mcp_server.serve_mcp(
+            project=project,
+            repo_root=tmp_path,
+            autoload_config=autoload_config,
+            trusted_workflows=trusted_workflows,
+        )
+    )
     server = _FakeServer.last_instance
     assert server is not None
     return server
@@ -418,6 +591,20 @@ def test_mcp_help_topic_supports_text_format(monkeypatch, tmp_path: Path) -> Non
     assert "JSON Schema guidance" in payload["content"]
 
 
+def test_mcp_help_topic_composition_json(monkeypatch, tmp_path: Path) -> None:
+    _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("help_topic", {"topic": "composition"}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["topic"] == "composition"
+    assert payload["format"] == "json"
+    assert "stage_contract_checklist" in payload["content"]
+
+
 def test_mcp_help_topic_rejects_unknown_topic(monkeypatch, tmp_path: Path) -> None:
     _write_app(tmp_path / "userlib" / "billing" / "invoice.rllm", name="invoice", description="Billing invoice summary")
     server = _boot_server(monkeypatch, tmp_path, project="billing")
@@ -440,3 +627,153 @@ def test_mcp_help_topic_rejects_invalid_format(monkeypatch, tmp_path: Path) -> N
     assert is_error is True
     assert payload["ok"] is False
     assert payload["error"]["error_code"] == "RLLM_002"
+
+
+def test_mcp_list_workflows_is_project_scoped(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    _write_workflow(tmp_path / "userlib" / "support")
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["project"] == "billing"
+    assert payload["total"] == 1
+    assert payload["workflows"][0]["name"] == "project_main"
+
+
+def test_mcp_invoke_workflow_executes_entrypoint(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=True)
+
+    listed = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    _, listed_payload = _decode_result(listed)
+    workflow_id = listed_payload["workflows"][0]["id"]
+
+    result = asyncio.run(server.call_tool_handler("invoke_workflow", {"id": workflow_id, "input": {"query": "hello"}}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["id"] == workflow_id
+    assert payload["result"]["query"] == "hello"
+    assert payload["result"]["report_markdown"].startswith("# hello")
+
+
+def test_mcp_invoke_workflow_rejects_schema_invalid_input(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=True)
+
+    listed = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    _, listed_payload = _decode_result(listed)
+    workflow_id = listed_payload["workflows"][0]["id"]
+
+    result = asyncio.run(server.call_tool_handler("invoke_workflow", {"id": workflow_id, "input": {}}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is True
+    assert payload["ok"] is False
+    assert payload["error"]["error_code"] == "RLLM_004"
+
+
+def test_mcp_list_workflows_invocation_template_matches_required_input_schema(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow_with_schema(
+        tmp_path / "userlib" / "billing",
+        input_schema_yaml="\n".join(
+            [
+                "  type: object",
+                "  properties:",
+                "    ticket_id: { type: string }",
+                "    include_history: { type: boolean }",
+                "  required: [ticket_id, include_history]",
+                "  additionalProperties: false",
+            ]
+        ),
+    )
+    server = _boot_server(monkeypatch, tmp_path, project="billing")
+
+    result = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    template = payload["workflows"][0]["invocation_template"]
+    assert template == {"ticket_id": "<string>", "include_history": False}
+
+
+def test_mcp_invoke_workflow_requires_trusted_opt_in(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=False)
+
+    listed = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    _, listed_payload = _decode_result(listed)
+    workflow_id = listed_payload["workflows"][0]["id"]
+
+    result = asyncio.run(server.call_tool_handler("invoke_workflow", {"id": workflow_id, "input": {"query": "hello"}}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is True
+    assert payload["ok"] is False
+    assert payload["error"]["error_code"] == "RLLM_002"
+
+
+def test_mcp_list_tools_hides_invoke_workflow_when_untrusted(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=False)
+
+    tools = asyncio.run(server.list_tools_handler())
+    tool_names = {tool.name for tool in tools}
+    assert "invoke_workflow" not in tool_names
+
+
+def test_mcp_list_tools_shows_invoke_workflow_when_trusted(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=True)
+
+    tools = asyncio.run(server.list_tools_handler())
+    tool_names = {tool.name for tool in tools}
+    assert "invoke_workflow" in tool_names
+
+
+def test_mcp_invoke_workflow_rejects_entrypoint_escape(monkeypatch, tmp_path: Path) -> None:
+    project_dir = tmp_path / "userlib" / "billing"
+    _write_workflow(project_dir)
+    workflow_spec = project_dir / "workflow.yaml"
+    workflow_spec.write_text(
+        workflow_spec.read_text(encoding="utf-8").replace(
+            "entrypoint: workflow/runner.py:run_workflow",
+            "entrypoint: ../escape.py:run_workflow",
+        ),
+        encoding="utf-8",
+    )
+    (project_dir.parent / "escape.py").write_text("def run_workflow(input_payload):\n    return {}\n", encoding="utf-8")
+
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=True)
+    listed = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    _, listed_payload = _decode_result(listed)
+    workflow_id = listed_payload["workflows"][0]["id"]
+
+    result = asyncio.run(server.call_tool_handler("invoke_workflow", {"id": workflow_id, "input": {"query": "x"}}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is True
+    assert payload["ok"] is False
+    assert payload["error"]["error_code"] == "RLLM_999"
+
+
+def test_mcp_invoke_workflow_supports_relative_imports(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow_with_relative_import(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=True)
+
+    listed = asyncio.run(server.call_tool_handler("list_workflows", {}))
+    _, listed_payload = _decode_result(listed)
+    workflow_id = listed_payload["workflows"][0]["id"]
+
+    result = asyncio.run(server.call_tool_handler("invoke_workflow", {"id": workflow_id, "input": {"query": "hello"}}))
+    is_error, payload = _decode_result(result)
+
+    assert is_error is False
+    assert payload["ok"] is True
+    assert payload["result"]["report_markdown"] == "# hello"
