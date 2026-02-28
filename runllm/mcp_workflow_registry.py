@@ -8,9 +8,9 @@ from typing import Any
 import yaml
 
 from runllm.mcp_utils import (
+    get_schema_fields,
     infer_project,
     matches_query,
-    placeholder_for_schema,
 )
 
 
@@ -35,28 +35,11 @@ def _workflow_id(project: str, path: Path, repo_root: Path) -> str:
     return f"{project}:{rel}"
 
 
-def _invocation_template(schema: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(schema, dict) or schema.get("type") != "object":
-        return {}
-    properties = schema.get("properties", {})
-    if not isinstance(properties, dict):
-        properties = {}
-    required = schema.get("required", [])
-    required_keys = required if isinstance(required, list) else []
-    template: dict[str, Any] = {}
-    for key in required_keys:
-        key_name = str(key)
-        subschema = properties.get(key_name)
-        if not isinstance(subschema, dict):
-            subschema = {}
-        template[key_name] = placeholder_for_schema(subschema)
-    return template
-
-
 def build_workflow_registry(repo_root: Path) -> list[WorkflowEntry]:
     entries: list[WorkflowEntry] = []
-    # Workflows are expected in userlib/<project> or rllmlib
-    for library in (USERLIB_DIR, RLLMLIB_DIR):
+    # Search in library dirs and examples/onboarding for runllm project scope
+    search_dirs = [USERLIB_DIR, RLLMLIB_DIR, "examples"]
+    for library in search_dirs:
         base = repo_root / library
         if not base.exists() or not base.is_dir():
             continue
@@ -93,14 +76,29 @@ def build_workflow_registry(repo_root: Path) -> list[WorkflowEntry]:
 
             workflow_id = _workflow_id(project, spec_path, repo_root)
             rel_path = spec_path.resolve().relative_to(repo_root.resolve()).as_posix()
+
+            input_required, input_optional, invocation_template = get_schema_fields(input_schema)
+            output_required, output_optional, _ = get_schema_fields(output_schema)
+            returns = output_required + output_optional
+
             card = {
                 "id": workflow_id,
                 "name": name.strip(),
                 "description": description.strip(),
                 "project": project,
                 "path": rel_path,
-                "invocation_template": _invocation_template(input_schema),
+                "input_required": input_required,
+                "input_optional": input_optional,
+                "returns": returns,
+                "invocation_template": invocation_template,
             }
+            if isinstance(raw.get("metadata"), dict):
+                meta = raw["metadata"]
+                if "suggestions" in meta:
+                    card["suggestions"] = meta["suggestions"]
+                if "tags" in meta:
+                    card["tags"] = meta["tags"]
+
             entries.append(
                 WorkflowEntry(
                     id=workflow_id,

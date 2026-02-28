@@ -78,7 +78,8 @@ Input:
 
 ## Optional frontmatter keys
 
-- `metadata` object (free-form)
+- `metadata` object (free-form). Special keys:
+  - `suggestions` string array: Recommended related apps to explore next via MCP.
 - `recommended_models` string array
 - `tags` string array
 - `uses` array (composition)

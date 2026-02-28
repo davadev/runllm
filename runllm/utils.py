@@ -5,7 +5,7 @@ from typing import Any
 
 
 def estimate_tokens(text: str) -> int:
-    # Conservative heuristic fallback.
+    # Conservative heuristic fallback (approx 4 chars per token).
     return max(1, int(len(text) / 4))
 
 

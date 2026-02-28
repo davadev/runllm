@@ -320,3 +320,82 @@ def test_registry_invocation_template_caps_large_min_items(tmp_path: Path) -> No
     app = result["programs"][0]
 
     assert len(app["invocation_template"]["batch"]) == 3
+
+
+def test_registry_includes_suggestions_from_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "userlib" / "ops" / "suggestions_demo.rllm"
+    content = """---
+name: suggestions_demo
+description: App with suggestions.
+version: 0.1.0
+author: tester
+max_context_window: 8000
+input_schema:
+  type: object
+  properties:
+    text: { type: string }
+  required: [text]
+output_schema:
+  type: object
+  properties:
+    ok: { type: boolean }
+  required: [ok]
+llm:
+  model: gpt-4
+llm_params:
+  temperature: 0
+metadata:
+  suggestions:
+    - "ops:userlib/ops/other.rllm"
+---
+Prompt
+"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+    result = list_programs_for_project(tmp_path, "ops")
+    app = result["programs"][0]
+    assert app["suggestions"] == ["ops:userlib/ops/other.rllm"]
+
+
+def test_workflow_registry_includes_suggestions_and_searches_examples(tmp_path: Path) -> None:
+    from runllm.mcp_workflow_registry import build_workflow_registry
+
+    # Create an example workflow in examples/onboarding
+    path = tmp_path / "examples" / "onboarding" / "workflow.yaml"
+    content = """
+name: onboarding_workflow
+description: Setup guide.
+entrypoint: "main:run"
+input_schema:
+  type: object
+output_schema:
+  type: object
+metadata:
+  suggestions:
+    - "runllm:examples/onboarding/other.yaml"
+"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+    entries = build_workflow_registry(tmp_path)
+    assert len(entries) == 1
+    wf = entries[0]
+    assert wf.project == "runllm"
+    assert wf.card["name"] == "onboarding_workflow"
+    assert wf.card["suggestions"] == ["runllm:examples/onboarding/other.yaml"]
+
+
+def test_matches_query_searches_tags_and_suggestions() -> None:
+    from runllm.mcp_utils import matches_query
+    card = {
+        "name": "foo",
+        "description": "bar",
+        "project": "baz",
+        "tags": ["nlp", "test"],
+        "suggestions": ["runllm:other"]
+    }
+    assert matches_query(card, "nlp")
+    assert matches_query(card, "other")
+    assert matches_query(card, "foo")
+    assert not matches_query(card, "missing")

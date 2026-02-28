@@ -115,7 +115,7 @@ async def serve_mcp(
                 name="list_programs",
                 description=(
                     "List available runllm programs for the scoped project. "
-                    "Response includes description, required input params, and return fields with type hints."
+                    "Response includes description, tags, suggestions, required input params, and return fields with type hints."
                 ),
                 inputSchema={
                     "type": "object",
@@ -162,7 +162,7 @@ async def serve_mcp(
                 name="list_workflows",
                 description=(
                     "List available workflow entrypoints for the scoped project. "
-                    "Workflows provide one-call orchestration interfaces."
+                    "Response includes description, tags, suggestions, required input params, and return fields with type hints."
                 ),
                 inputSchema={
                     "type": "object",

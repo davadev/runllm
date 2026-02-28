@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -228,7 +229,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="runllm",
         description="Run and compose .rllm apps with typed contracts.",
         formatter_class=_HelpFormatter,
-        epilog=(
+        epilog=textwrap.dedent(
             """
             Quick start:
               runllm validate examples/summary.rllm

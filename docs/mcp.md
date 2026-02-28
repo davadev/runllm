@@ -6,8 +6,11 @@
 
 The core `mcp.runllm` server provides:
 - `help_topic`: Retrieve authoring guidance.
-- `list_programs`: Discover apps in the library.
+- `list_programs`: Discover apps in the library. Response includes `tags`, `suggestions`, and type hints for inputs/outputs.
 - `invoke_program`: Run documentation-related helpers.
+- `list_workflows`: Discover workflows in the library. Response includes `tags`, `suggestions`, and type hints for inputs/outputs.
+- `invoke_workflow`: Run orchestration workflows (requires trusted mode).
+
 
 ## Project Discovery
 

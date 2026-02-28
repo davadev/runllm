@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from runllm.mcp_utils import (
+    get_schema_fields,
     infer_project,
     matches_query,
     placeholder_for_schema,
@@ -27,71 +28,17 @@ class ProgramEntry:
     card: dict[str, Any]
 
 
-def _render_schema_type(schema: dict[str, Any]) -> str:
-    raw_type = schema.get("type")
-    if isinstance(raw_type, str):
-        if raw_type == "array":
-            items = schema.get("items")
-            if isinstance(items, dict):
-                return f"array<{_render_schema_type(items)}>"
-            return "array<unknown>"
-        return raw_type
-    if isinstance(raw_type, list):
-        return "|".join(str(t) for t in raw_type)
-    if "enum" in schema:
-        return "enum"
-    return "unknown"
-
-
-def _schema_fields(schema: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    if not isinstance(schema, dict):
-        return [], [], {}
-    if schema.get("type") != "object":
-        field = {
-            "name": "value",
-            "type": _render_schema_type(schema),
-            "required": True,
-        }
-        return [field], [], {}
-
-    properties = schema.get("properties", {})
-    if not isinstance(properties, dict):
-        properties = {}
-    required = set(schema.get("required", [])) if isinstance(schema.get("required", []), list) else set()
-
-    required_fields: list[dict[str, Any]] = []
-    optional_fields: list[dict[str, Any]] = []
-    invocation_template: dict[str, Any] = {}
-
-    for key in sorted(properties.keys()):
-        subschema = properties.get(key)
-        if not isinstance(subschema, dict):
-            subschema = {}
-        row = {
-            "name": key,
-            "type": _render_schema_type(subschema),
-            "required": key in required,
-        }
-        if key in required:
-            required_fields.append(row)
-            invocation_template[key] = placeholder_for_schema(subschema)
-        else:
-            optional_fields.append(row)
-
-    return required_fields, optional_fields, invocation_template
-
-
 def _program_id(project: str, path: Path, repo_root: Path) -> str:
     rel = path.resolve().relative_to(repo_root.resolve()).as_posix()
     return f"{project}:{rel}"
 
 
 def _card_from_program(program: RLLMProgram, project: str, repo_root: Path) -> dict[str, Any]:
-    input_required, input_optional, invocation_template = _schema_fields(program.input_schema)
-    output_required, output_optional, _ = _schema_fields(program.output_schema)
+    input_required, input_optional, invocation_template = get_schema_fields(program.input_schema)
+    output_required, output_optional, _ = get_schema_fields(program.output_schema)
     returns = output_required + output_optional
     rel_path = program.path.resolve().relative_to(repo_root.resolve()).as_posix()
-    return {
+    card = {
         "id": _program_id(project, program.path, repo_root),
         "name": program.name,
         "description": program.description,
@@ -102,6 +49,11 @@ def _card_from_program(program: RLLMProgram, project: str, repo_root: Path) -> d
         "returns": returns,
         "invocation_template": invocation_template,
     }
+    if program.tags:
+        card["tags"] = program.tags
+    if "suggestions" in program.metadata:
+        card["suggestions"] = program.metadata["suggestions"]
+    return card
 
 
 def build_registry(repo_root: Path) -> list[ProgramEntry]:
