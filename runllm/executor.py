@@ -286,10 +286,20 @@ def _litellm_completion_call(
     *, model: str, prompt: str, llm_params: dict[str, Any], completion_fn: Any
 ) -> tuple[str, UsageMetrics]:
     started = time.perf_counter()
+
+    # Translate 'format: json' to 'response_format' for OpenAI-style providers
+    # if it's not already set. Many models require this for strict JSON mode.
+    call_params = dict(llm_params)
+    if call_params.get("format") == "json" and "response_format" not in call_params:
+        # LiteLLM supports response_format for OpenAI, Azure, etc.
+        # We keep 'format' for Ollama as it uses it natively.
+        if not model.startswith("ollama/"):
+            call_params["response_format"] = {"type": "json_object"}
+
     response = completion_fn(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        **llm_params,
+        **call_params,
     )
     elapsed_ms = (time.perf_counter() - started) * 1000.0
     content = _extract_content(response)

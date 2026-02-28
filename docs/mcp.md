@@ -1,139 +1,43 @@
 # MCP Integration
 
-`runllm` can expose `.rllm` apps over a minimal MCP surface.
+`runllm` exposes a minimal MCP surface for documentation and program discovery.
 
-Related docs:
+## Documentation MCP
 
-- CLI command reference: `cli.md`
-- `.rllm` file contract and schemas: `rllm-spec.md`
-- Error payload catalog: `errors.md`
+The core `mcp.runllm` server provides:
+- `help_topic`: Retrieve authoring guidance.
+- `list_programs`: Discover apps in the library.
+- `invoke_program`: Run documentation-related helpers.
 
-Design goals for v0.2:
+## Installation in OpenCode
 
-- project-scoped discovery to avoid cross-project context bloat
-- minimal tool surface for better agent reliability
-- compact program cards that include contract hints
-
-## Library layout
-
-Projects are inferred by directory, not metadata.
-
-- `userlib/<project_name>/**/*.rllm` -> project = `<project_name>`
-- `rllmlib/**/*.rllm` -> project = `rllmlib`
-
-Notes:
-
-- Files directly under `userlib/` are ignored.
-- `examples/` is not part of MCP discovery.
-
-Workflow entrypoint discovery:
-
-- `workflow.yaml` files under a project scope are indexed as MCP workflows.
-- A workflow spec must include:
-  - `name` (string)
-  - `description` (string)
-  - `entrypoint` (`relative/path.py:function_name`)
-  - `input_schema` (JSON Schema object)
-  - `output_schema` (JSON Schema object)
-
-## Start server
-
-Use stdio MCP server mode and scope one project per server instance.
+Use `install-opencode` to set up the documentation MCP and builder agent:
 
 ```bash
-runllm mcp serve --project runllm
-```
-
-Enable trusted workflow execution (`invoke_workflow`) only for repositories you trust:
-
-```bash
-runllm mcp serve --project runllm --trusted-workflows
-```
-
-Common scope examples:
-
-```bash
-runllm mcp serve --project project_a
-runllm mcp serve --project rllmlib
-```
-
-## OpenCode auto-install
-
-To auto-add `runllm` MCP into OpenCode config and create a dedicated builder agent:
-
-```bash
-runllm mcp install-opencode --project runllm
+runllm mcp install-opencode
 ```
 
 This command:
+- updates `opencode.json` with the `runllm` entry.
+- creates `agent/runllm-rllm-builder.md` with documentation rules.
 
-- writes/updates `opencode.json` in `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
-- upserts builder entry `mcp.runllm` with command:
-  - `runllm mcp serve --project runllm`
-- upserts project entry `mcp.<mcp-name>` (default `runllm-project`) with command:
-  - `runllm mcp serve --project <project>`
-- creates `agent/runllm-rllm-builder.md` (or `--agent-file`) with instructions to use only `mcp.runllm` for `.rllm` authoring and runllm docs guidance
-- creates `agent/<project>-agent.md` (or `--project-agent-file`) with instructions to prefer `mcp.<mcp-name>` for project tasks while allowing local file tools (`read`, `write`, `edit`, `glob`, `grep`)
-- auto-discovers existing MCP keys in `opencode.json` and adds explicit deny permissions for each non-project MCP in the generated project agent
-- generated agents do not enable `skill`
+## Project Execution (Bundling)
 
-Safety behavior:
+For project-specific execution (like `jw_deep_research`), we recommend using the **bundle** approach instead of separate MCP servers to avoid request timeouts on long-running tasks.
 
-- preserves existing `mcp.runllm` and `mcp.<mcp-name>` values unless fields are missing
-- does not overwrite existing agent file content by default (builder and project agent files)
-- pass `--force` to overwrite both
-- project agent uses explicit per-MCP deny for discovered non-project MCP entries with scoped allow for `mcp.<mcp-name>`
+1. **Bundle the project:**
+   ```bash
+   runllm bundle jw_deep_research
+   ```
+2. **Run directly:**
+   ```bash
+   ./.bin/jw_deep_research --query "How can we overcome fear of death?"
+   ```
 
-Registry behavior:
+## Start server (Manual)
 
-- program registry is indexed once at server startup
-- use `list_programs` with `refresh: true` to reload newly added or edited `.rllm` files
-- `invoke_program` auto-retries once with an internal refresh when id is initially missing
+To manually start a project-scoped server:
 
-## MCP tools (minimal)
-
-- `list_programs`
-  - optional inputs: `query`, `limit`, `cursor`, `refresh`
-  - returns compact cards with:
-    - `name`, `description`
-    - `input_required` and `input_optional` with type hints
-    - `returns` with type hints
-    - `invocation_template` for minimum valid input
-- `invoke_program`
-  - required inputs: `id`, `input`
-  - runs one scoped app with JSON input
-- `list_workflows`
-  - optional inputs: `query`, `limit`, `cursor`, `refresh`
-  - returns project-scoped workflow entrypoints (one-call orchestration interfaces)
-- `invoke_workflow`
-  - required inputs: `id`, `input`
-  - validates input against workflow schema, runs workflow entrypoint, validates output schema
-  - requires server startup flag `--trusted-workflows`
-- `help_topic`
-  - required input: `topic`
-  - optional input: `format` (`json` default, or `text`)
-  - returns canonical runllm authoring guidance for topic:
-    - `rllm`, `schema`, `recovery`, `composition`, `examples`, `credentials`, `config`
-
-## Agent-friendly flow
-
-1. Call `help_topic` for `rllm`, `schema`, `recovery`, and `composition`.
-2. Call `list_programs` with optional `query`.
-3. For single-call project orchestration, call `list_workflows` and pick one id.
-4. Call `invoke_workflow` with the workflow `invocation_template` adapted to task data.
-5. For direct app calls, use `list_programs` + `invoke_program`.
-
-This keeps discovery flat and usually completes in 3-5 MCP calls depending on whether workflow invocation is needed.
-
-Refresh behavior:
-
-- `list_programs` uses startup index by default.
-- pass `refresh: true` to rebuild registry before listing.
-- `invoke_program` automatically performs one registry refresh retry when id is not found.
-
-## Failure handling
-
-- Unknown/out-of-scope ids return structured error payloads.
-- Non-object invocation input returns structured input-schema error payload.
-- Runtime app failures are returned as structured `runllm` error payloads.
-- MCP tool error responses are marked with protocol `isError=true`.
+```bash
+runllm mcp serve --project <name> [--repo-root path]
+```

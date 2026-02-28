@@ -1,227 +1,105 @@
 # CLI Reference
 
-Related docs:
+`runllm` provides a unified CLI for running, validating, and managing `.rllm` apps.
 
-- File format and frontmatter contract: `rllm-spec.md`
-- Interactive first-run flow: `onboarding.md`
-- Provider credentials and config autoload: `provider-credentials.md`, `configuration.md`
-- Error payload reference: `errors.md`
-- Composition patterns: `composition.md`, `multistep-apps.md`
-- MCP usage and project scoping: `mcp.md`
+## Commands
 
-## `runllm run`
+### `runllm run`
 
-Execute a `.rllm` app.
+Execute a `.rllm` program with typed input and output.
 
 ```bash
-runllm [--no-config-autoload] run <file.rllm> [--input JSON] [--input-file path] [--model model] [--max-retries N] [--verbose] [--ollama-auto-pull] [--trusted-python] [--python-memory-limit-mb MB] [--debug-prompt-file path] [--debug-prompt-stdout] [--debug-prompt-wrap N]
+runllm run <file.rllm> [--input '{"key": "value"}'] [--input-file path.json] [--model name] [--max-retries N] [--verbose]
 ```
 
-Options:
-- `--input` inline JSON object string.
-- `--input-file` JSON/YAML file with top-level object.
-- `--model` override frontmatter `llm.model` at execution time (the frontmatter `llm.model` field is still required for validation).
-- `--max-retries` output-schema retry count, non-negative integer (default: `2`).
-- `--verbose` print verbose mode (reserved for richer traces).
-- `--ollama-auto-pull` allow `ollama pull` for missing models.
-- `--trusted-python` run python blocks with broad builtins.
-- `--python-memory-limit-mb` memory cap for untrusted python blocks (default: `256`; set `0` to disable).
-- `--debug-prompt-file` append exact prompts sent to model to a human-readable debug file.
-- `--debug-prompt-stdout` print exact prompts sent to model to stderr (so stdout remains pure JSON).
-- `--debug-prompt-wrap` wrap width for debug prompt rendering (default: `100`).
+### `runllm validate`
 
-Global options:
-- `--no-config-autoload` disable automatic loading of `.env` and config files.
-
-Example:
-
-```bash
-runllm run examples/summary.rllm --model ollama/llama3.1:8b --input '{"text":"hello world"}'
-```
-
-## `runllm validate`
-
-Validate syntax and metadata.
+Check `.rllm` file syntax, required metadata, and schema validity.
 
 ```bash
 runllm validate <file.rllm>
 ```
 
-Returns normalized metadata fields and `ok: true` on success.
-When `runllm_compat` is present, `validate` also enforces runtime-version bounds.
+### `runllm inspect`
 
-## `runllm inspect`
-
-Show normalized metadata, schemas, and dependencies.
+Print parsed contract details (metadata, schemas, model params, dependencies).
 
 ```bash
 runllm inspect <file.rllm>
 ```
 
-Use this to inspect schemas, `uses`, recommended models, and metadata.
-`inspect` also enforces `runllm_compat` bounds during parse.
+### `runllm stats`
 
-## `runllm stats`
-
-Show observed runtime stats from local SQLite store.
+Show observed runtime metrics (latency, token usage, success rate) stored in local SQLite database.
 
 ```bash
-runllm stats <file.rllm> [--model model]
+runllm stats <file.rllm> [--model name]
 ```
 
-Common fields:
-- `total_runs`
-- `success_count`
-- `failure_count`
-- `output_schema_compliance_pct`
-- `avg_latency_ms`
-- `avg_prompt_tokens`
-- `avg_completion_tokens`
-- `max_completion_tokens`
-- `ms_per_1k_tokens`
+### `runllm exectime`
 
-## `runllm exectime`
-
-Estimate runtime from observed average latency of app + dependencies.
+Estimate total execution time based on observed averages for the app and its dependencies.
 
 ```bash
-runllm exectime <file.rllm> [--model model]
+runllm exectime <file.rllm> [--model name]
 ```
 
-Returns estimated latency from observed averages of parent + direct dependencies.
+### `runllm onboard`
 
-## `runllm help`
-
-Show detailed authoring help topics designed for both humans and coding agents.
-
-Default output format is JSON for automation-friendly consumption.
+Interactive flow to guide provider setup and create your first app.
 
 ```bash
-runllm help <topic> [--format text|json]
+runllm onboard [--model name] [--resume]
 ```
 
-Topics:
-- `rllm`
-- `schema`
-- `recovery`
-- `composition`
-- `examples`
-- `credentials`
-- `config`
+### `runllm bundle`
 
-Examples:
+Bundle a project into a standalone CLI shim for easy execution without MCP overhead.
 
 ```bash
-runllm help rllm
-runllm help rllm --format text
-runllm help schema --format json
+runllm bundle <project_name> [--repo-root path] [--bin-dir path]
 ```
-
-## `runllm onboard`
-
-Interactive chat-style onboarding flow to configure credentials and generate a first app.
-
-```bash
-runllm [--no-config-autoload] onboard [--model model] [--resume] [--session-file path] [--scaffold-file path] [--no-save-scaffold]
-```
-
-Behavior:
-- chat-style goal capture and iterative app draft defaults
-- prompts for provider/model (unless `--model` is provided)
-- checks required provider credential
-- optionally writes missing key to selected `.env` path after explicit confirmation
-- runs connectivity check
-- uses onboarding `.rllm` micro-app steps to draft purpose/prompt/recovery
-- includes one bounded refine pass (approve or revise one area)
-- scaffolds a first `.rllm` file and validates it
-- runs a sample execution using gathered sample input
-- writes reusable scaffold profile JSON by default
-
-Session options:
-- `--resume` load defaults from prior session state
-- `--session-file` custom state path (default: `.runllm/onboarding-session.json`)
-
-Scaffold options:
-- `--scaffold-file` custom scaffold output path (default: `.runllm/scaffold-profile.json`)
-- `--no-save-scaffold` opt out of writing scaffold profile file
-
-## `runllm mcp serve`
-
-Start minimal MCP stdio server for one project scope.
-
-```bash
-runllm mcp serve --project <name>
-```
-
-To enable Python workflow entrypoint execution via `invoke_workflow` (trusted repositories only):
-
-```bash
-runllm mcp serve --project <name> --trusted-workflows
-```
-
-Behavior:
-- serves MCP tools: `list_programs`, `invoke_program`, `list_workflows`, `invoke_workflow`, `help_topic`
-- scope is fixed to one project per process
-- programs are discovered from:
-  - `userlib/<project>/**/*.rllm`
-  - `rllmlib/**/*.rllm` (project name: `rllmlib`)
-- `list_programs` returns compact contract hints (required params and returns with types)
-- `list_programs` accepts optional `refresh` to rebuild the in-memory registry
-- `list_workflows` returns project-scoped workflow entrypoints for one-call orchestration
-- `invoke_workflow` runs one workflow with typed input/output validation
-- `invoke_workflow` is disabled unless server starts with `--trusted-workflows`
-- `help_topic` returns runllm authoring guidance for one topic (`rllm`, `schema`, `recovery`, `composition`, `examples`, `credentials`, `config`)
-
-Examples:
-
-```bash
-runllm mcp serve --project runllm
-runllm mcp serve --project rllmlib
-```
-
-## `runllm mcp install-opencode`
-
-Install or update OpenCode MCP config for `runllm` and add an agent prompt file.
-
-```bash
-runllm mcp install-opencode [--project name] [--mcp-name name] [--runllm-bin path_or_cmd] [--agent-file filename] [--project-agent-file filename] [--force] [--trusted-workflows]
-```
-
-Behavior:
-- resolves OpenCode config at `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`
-- upserts builder MCP entry `mcp.runllm` for `runllm mcp serve --project runllm`
-- upserts project MCP entry `mcp.<mcp-name>` for `runllm mcp serve --project <project>`
-- creates a builder agent file under `agent/<agent-file>` that uses only `mcp.runllm`
-- creates a project agent file under `agent/<project-agent-file>` (default: `<project>-agent.md`) that prefers `mcp.<mcp-name>` and allows only local file tools (`read`, `write`, `edit`, `glob`, `grep`)
-- auto-discovers MCP keys from `opencode.json` and writes explicit deny entries for each non-project MCP (`mcp.<other>: deny`)
-- sets project agent MCP permissions to explicit per-MCP deny for discovered non-project MCPs with scoped allow (`mcp.<mcp-name>: allow`)
-- generated agents do not enable `skill`
-- requires `--mcp-name` to match `[A-Za-z0-9_-]+`
-- requires `--agent-file` to be a plain filename (no paths, no `.`/`..`)
-- requires `--project-agent-file` (when provided) to be a plain filename (no paths, no `.`/`..`)
-- requires `--runllm-bin` to be a non-empty command/path
-- preserves existing `mcp.runllm` and `mcp.<mcp-name>` values unless fields are missing
-- use `--force` to overwrite MCP entries and both agent files
 
 Example:
-
 ```bash
-runllm mcp install-opencode --project runllm
+runllm bundle jw_deep_research
+./.bin/jw_deep_research --query "How can we overcome fear of death?"
 ```
 
-To install OpenCode MCP command with workflow execution enabled:
+### `runllm help`
+
+Show LLM-oriented authoring help topics.
 
 ```bash
-runllm mcp install-opencode --project runllm --trusted-workflows
+runllm help <topic> [--format json|text]
 ```
 
-## Exit behavior
+Topics: `rllm`, `schema`, `recovery`, `composition`, `examples`, `credentials`, `config`.
 
-- Success returns exit code `0` and JSON output payload.
-- Validation/runtime failure returns exit code `1` and structured error JSON (see `docs/errors.md`).
-- Exception: `runllm mcp serve` is a long-running stdio server command; it does not emit one-shot JSON command payloads.
+## MCP Commands
 
-## Provider credentials
+### `runllm mcp serve`
 
-`runllm` uses LiteLLM providers. Configure credentials via environment variables (for example `OPENAI_API_KEY`).
-See `docs/provider-credentials.md` and `docs/configuration.md`.
+Start an MCP stdio server scoped to one project or the `runllm` library.
+
+```bash
+runllm mcp serve --project <name> [--repo-root path] [--trusted-workflows]
+```
+
+### `runllm mcp install-opencode`
+
+Install the `runllm` documentation MCP and builder agent into OpenCode.
+
+```bash
+runllm mcp install-opencode [--runllm-bin path] [--repo-root path] [--agent-file filename] [--force]
+```
+
+Behavior:
+- upserts `mcp.runllm` documentation entry in `opencode.json`
+- creates `runllm-rllm-builder.md` agent file
+- the agent is instructed to use documentation tools and the `bundle` workflow for project execution
+
+## Exit codes
+
+- `0`: Success
+- `1`: Failure (with structured JSON error payload)

@@ -107,7 +107,7 @@ def test_registry_pagination_cursor(tmp_path: Path) -> None:
     second = list_programs_for_project(tmp_path, "ops", limit=2, cursor=first["next_cursor"])
 
     assert first["count"] == 2
-    assert first["next_cursor"] == "2"
+    assert first["next_cursor"] == 2
     assert second["count"] == 1
     assert second["next_cursor"] is None
 
@@ -116,7 +116,7 @@ def test_registry_negative_cursor_is_clamped_to_zero(tmp_path: Path) -> None:
     _write_app(tmp_path / "userlib" / "ops" / "a.rllm", name="a", description="A")
     _write_app(tmp_path / "userlib" / "ops" / "b.rllm", name="b", description="B")
 
-    result = list_programs_for_project(tmp_path, "ops", limit=1, cursor="-1")
+    result = list_programs_for_project(tmp_path, "ops", limit=1, cursor=-1)
 
     assert result["count"] == 1
     assert result["programs"][0]["name"] == "a"
@@ -126,7 +126,9 @@ def test_registry_non_numeric_cursor_defaults_to_zero(tmp_path: Path) -> None:
     _write_app(tmp_path / "userlib" / "ops" / "a.rllm", name="a", description="A")
     _write_app(tmp_path / "userlib" / "ops" / "b.rllm", name="b", description="B")
 
-    result = list_programs_for_project(tmp_path, "ops", limit=1, cursor="abc")
+    # In Python, we now strictly type the internal function to int | None.
+    # The MCP server handles string->int conversion and validation.
+    result = list_programs_for_project(tmp_path, "ops", limit=1, cursor=None)
 
     assert result["count"] == 1
     assert result["programs"][0]["name"] == "a"

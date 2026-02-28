@@ -15,7 +15,7 @@ from runllm.executor import estimate_execution_time_ms, run_program
 from runllm.help_content import HELP_TOPICS, help_topics_json, help_topics_text
 from runllm.models import RunOptions
 from runllm.onboarding import cmd_onboard
-from runllm.opencode import install_opencode_integration
+from runllm.opencode import bundle_project, install_opencode_integration
 from runllm.parser import parse_rllm_file
 from runllm.stats import StatsStore
 
@@ -178,8 +178,24 @@ def cmd_mcp_serve(args: argparse.Namespace) -> int:
         )
     from runllm.mcp_server import run_mcp_server
 
+    repo_root_arg = getattr(args, "repo_root", None)
+    repo_root: Path | None = None
+    if repo_root_arg is not None:
+        repo_root_text = str(repo_root_arg).strip()
+        if not repo_root_text:
+            raise make_error(
+                error_code="RLLM_002",
+                error_type="MetadataValidationError",
+                message="repo_root must be a non-empty string when provided.",
+                details={"repo_root": repo_root_arg},
+                recovery_hint="Pass --repo-root with a valid directory path or omit it.",
+                doc_ref="docs/errors.md#RLLM_002",
+            )
+        repo_root = Path(repo_root_text).resolve()
+
     run_mcp_server(
         project=project,
+        repo_root=repo_root,
         autoload_config=getattr(args, "_autoload_config", None),
         trusted_workflows=bool(getattr(args, "trusted_workflows", False)),
     )
@@ -188,13 +204,20 @@ def cmd_mcp_serve(args: argparse.Namespace) -> int:
 
 def cmd_mcp_install_opencode(args: argparse.Namespace) -> int:
     payload = install_opencode_integration(
-        project=args.project,
-        mcp_name=args.mcp_name,
+        repo_root=getattr(args, "repo_root", None),
         runllm_bin=args.runllm_bin,
         agent_file=args.agent_file,
-        project_agent_file=args.project_agent_file,
         force=args.force,
-        trusted_workflows=bool(getattr(args, "trusted_workflows", False)),
+    )
+    _print_json(payload)
+    return 0
+
+
+def cmd_bundle(args: argparse.Namespace) -> int:
+    payload = bundle_project(
+        project_name=args.project,
+        repo_root=args.repo_root,
+        bin_dir=args.bin_dir,
     )
     _print_json(payload)
     return 0
@@ -226,7 +249,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(
         dest="command",
         required=True,
-        metavar="{run,validate,inspect,stats,exectime,onboard,help,mcp}",
+        metavar="{run,validate,inspect,stats,exectime,onboard,bundle,help,mcp}",
     )
 
     run_p = sub.add_parser(
@@ -345,6 +368,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     o_p.set_defaults(func=cmd_onboard)
 
+    b_p = sub.add_parser(
+        "bundle",
+        help="Bundle a project into a standalone CLI shim",
+        description="Create a wrapper script for a project staging script.",
+        formatter_class=_HelpFormatter,
+    )
+    b_p.add_argument("project", metavar="NAME", help="Project name under userlib/")
+    b_p.add_argument(
+        "--repo-root",
+        metavar="PATH",
+        default=None,
+        help="Repository root (defaults to current working directory).",
+    )
+    b_p.add_argument(
+        "--bin-dir",
+        metavar="PATH",
+        default=None,
+        help="Target directory for the shim script (defaults to .bin/ in repo root).",
+    )
+    b_p.set_defaults(func=cmd_bundle)
+
     h_p = sub.add_parser(
         "help",
         help="Show LLM-oriented authoring help topics",
@@ -392,6 +436,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Enable invoke_workflow execution of Python workflow entrypoints (trusted repos only).",
     )
+    m_serve.add_argument(
+        "--repo-root",
+        metavar="PATH",
+        default=None,
+        help="Repository root used for MCP discovery (defaults to current working directory).",
+    )
     m_serve.set_defaults(func=cmd_mcp_serve)
 
     m_install = m_sub.add_parser(
@@ -403,22 +453,16 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=_HelpFormatter,
     )
     m_install.add_argument(
-        "--project",
-        metavar="NAME",
-        default="runllm",
-        help="Project scope name used by runllm mcp serve.",
-    )
-    m_install.add_argument(
-        "--mcp-name",
-        metavar="NAME",
-        default="runllm-project",
-        help="Project MCP entry key to upsert in opencode.json.",
-    )
-    m_install.add_argument(
         "--runllm-bin",
         metavar="PATH_OR_CMD",
         default="runllm",
         help="Executable or path used in MCP command array.",
+    )
+    m_install.add_argument(
+        "--repo-root",
+        metavar="PATH",
+        default=None,
+        help="Repository root pinned into generated MCP command arrays.",
     )
     m_install.add_argument(
         "--agent-file",
@@ -427,20 +471,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Builder agent filename created under OpenCode agent directory.",
     )
     m_install.add_argument(
-        "--project-agent-file",
-        metavar="FILENAME",
-        default=None,
-        help="Project agent filename under OpenCode agent directory (default: <project>-agent.md).",
-    )
-    m_install.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing builder/project MCP entries and both agent files.",
-    )
-    m_install.add_argument(
-        "--trusted-workflows",
-        action="store_true",
-        help="Include --trusted-workflows in installed MCP command.",
+        help="Overwrite existing builder MCP entry and agent file.",
     )
     m_install.set_defaults(func=cmd_mcp_install_opencode)
 

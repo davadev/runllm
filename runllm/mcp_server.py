@@ -130,8 +130,8 @@ async def serve_mcp(
                             "default": 25,
                         },
                         "cursor": {
-                            "type": "string",
-                            "description": "Pagination cursor from previous response.",
+                            "type": "integer",
+                            "description": "Pagination cursor from previous response (non-negative integer).",
                         },
                         "refresh": {
                             "type": "boolean",
@@ -177,8 +177,8 @@ async def serve_mcp(
                             "default": 25,
                         },
                         "cursor": {
-                            "type": "string",
-                            "description": "Pagination cursor from previous response.",
+                            "type": "integer",
+                            "description": "Pagination cursor from previous response (non-negative integer).",
                         },
                         "refresh": {
                             "type": "boolean",
@@ -315,7 +315,7 @@ async def serve_mcp(
                             "doc_ref": "docs/errors.md#RLLM_002",
                         }
                     )
-                cursor_for_registry: str | None = None
+                cursor_for_registry: int | None = None
                 if cursor is not None:
                     if isinstance(cursor, bool):
                         return _err_payload(
@@ -360,13 +360,13 @@ async def serve_mcp(
                                 "doc_ref": "docs/errors.md#RLLM_002",
                             }
                         )
-                    cursor_for_registry = str(parsed_cursor)
+                    cursor_for_registry = parsed_cursor
                 result = list_programs_from_entries(
                     entries=registry_entries,
                     project=project,
                     query=query,
                     limit=limit,
-                    cursor=str(cursor_for_registry) if cursor_for_registry is not None else None,
+                    cursor=cursor_for_registry,
                 )
                 return _ok_payload(**result)
 
@@ -525,7 +525,7 @@ async def serve_mcp(
                             "doc_ref": "docs/errors.md#RLLM_002",
                         }
                     )
-                cursor_for_registry: str | None = None
+                cursor_for_registry: int | None = None
                 if cursor is not None:
                     if isinstance(cursor, bool):
                         return _err_payload(
@@ -570,13 +570,13 @@ async def serve_mcp(
                                 "doc_ref": "docs/errors.md#RLLM_002",
                             }
                         )
-                    cursor_for_registry = str(parsed_cursor)
+                    cursor_for_registry = parsed_cursor
                 result = list_workflows_from_entries(
                     entries=workflow_entries,
                     project=project,
                     query=query,
                     limit=limit,
-                    cursor=str(cursor_for_registry) if cursor_for_registry is not None else None,
+                    cursor=cursor_for_registry,
                 )
                 return _ok_payload(**result)
 

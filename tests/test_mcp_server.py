@@ -737,6 +737,16 @@ def test_mcp_list_tools_shows_invoke_workflow_when_trusted(monkeypatch, tmp_path
     assert "invoke_workflow" in tool_names
 
 
+def test_mcp_list_tools_cursor_schema_is_integer(monkeypatch, tmp_path: Path) -> None:
+    _write_workflow(tmp_path / "userlib" / "billing")
+    server = _boot_server(monkeypatch, tmp_path, project="billing", trusted_workflows=True)
+
+    tools = asyncio.run(server.list_tools_handler())
+    by_name = {tool.name: tool for tool in tools}
+    assert by_name["list_programs"].inputSchema["properties"]["cursor"]["type"] == "integer"
+    assert by_name["list_workflows"].inputSchema["properties"]["cursor"]["type"] == "integer"
+
+
 def test_mcp_invoke_workflow_rejects_entrypoint_escape(monkeypatch, tmp_path: Path) -> None:
     project_dir = tmp_path / "userlib" / "billing"
     _write_workflow(project_dir)

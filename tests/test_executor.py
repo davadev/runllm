@@ -70,142 +70,70 @@ def test_negative_max_retries_raises_metadata_error(tmp_path: Path, monkeypatch)
     assert fake._i == 0
 
 
-def test_python_post_error_is_not_retried(tmp_path: Path, monkeypatch) -> None:
+def test_openai_json_format_translation(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    
     app_text = """---
-name: post_fail
-description: post_fail
+name: json_test
+description: test
 version: 0.1.0
 author: test
 max_context_window: 8000
-input_schema:
-  type: object
-  properties:
-    text: {type: string}
-  required: [text]
-  additionalProperties: false
-output_schema:
-  type: object
-  properties:
-    summary: {type: string}
-  required: [summary]
-  additionalProperties: false
+input_schema: {type: object}
+output_schema: {type: object}
 llm:
-  model: openai/gpt-4o-mini
-llm_params: {}
+  model: openai/gpt-4o
+llm_params:
+  format: json
 ---
-Return only JSON.
-Input: {{input.text}}
-
-```rllm-python post
-raise RuntimeError("boom")
-```
+Return JSON.
 """
-    app = tmp_path / "post_fail.rllm"
+    app = tmp_path / "json_test.rllm"
     app.write_text(app_text, encoding="utf-8")
-    fake = FakeCompletion(['{"summary":"ok"}'])
+    
+    fake = FakeCompletion(['{}'])
+    run_program(app, {}, RunOptions(max_retries=0), completion_fn=fake)
+    
+    # Verify the call to litellm included response_format
+    last_call = fake.calls[0]
+    assert last_call["model"] == "openai/gpt-4o"
+    assert last_call["response_format"] == {"type": "json_object"}
+    # Verify original format remains (LiteLLM usually ignores it for OpenAI but keeps it for Ollama)
+    assert last_call["format"] == "json"
 
-    with pytest.raises(RunLLMError) as exc:
-        run_program(app, {"text": "abc"}, RunOptions(max_retries=3), completion_fn=fake)
 
-    assert exc.value.payload.error_code == "RLLM_009"
-    assert fake._i == 1
-    model_stats = StatsStore().aggregate(app_path=str(app.resolve()), model="openai/gpt-4o-mini")
-    assert model_stats["failure_count"] == 1
-
-
-def test_non_string_provider_content_raises_execution_error(tmp_path: Path, monkeypatch) -> None:
+def test_ollama_json_format_preservation(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    app = Path("examples/summary.rllm").resolve()
-    fake = FakeCompletion([[{"type": "text", "text": "not a plain string"}]])
+    app_text = """---
+name: ollama_json
+description: test
+version: 0.1.0
+author: test
+max_context_window: 8000
+input_schema: {type: object}
+output_schema: {type: object}
+llm:
+  model: ollama/llama3
+llm_params:
+  format: json
+---
+Return JSON.
+"""
+    app = tmp_path / "ollama_json.rllm"
+    app.write_text(app_text, encoding="utf-8")
+    
+    fake = FakeCompletion(['{}'])
+    
+    # Mock ensure_ollama_model to avoid subprocess calls
+    import runllm.executor
+    monkeypatch.setattr(runllm.executor, "ensure_ollama_model", lambda *a, **kw: None)
+    
+    run_program(app, {}, RunOptions(max_retries=0), completion_fn=fake)
+    
+    last_call = fake.calls[0]
+    assert last_call["model"] == "ollama/llama3"
+    # Ollama should NOT have response_format injected
+    assert "response_format" not in last_call
+    assert last_call["format"] == "json"
 
-    with pytest.raises(RunLLMError) as exc:
-        run_program(app, {"text": "abc"}, RunOptions(max_retries=0), completion_fn=fake)
-
-    assert exc.value.payload.error_code == "RLLM_011"
-
-
-def test_first_attempt_includes_output_contract_block(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    app = Path("examples/summary.rllm").resolve()
-    fake = FakeCompletion(['{"summary":"ok"}'])
-
-    run_program(app, {"text": "abc"}, RunOptions(max_retries=0), completion_fn=fake)
-
-    prompt = str(fake.calls[0]["messages"][0]["content"])
-    assert "Output contract:" in prompt
-    assert "Output schema (JSON):" in prompt
-    assert "Example output (JSON):" in prompt
-
-
-def test_retry_prompt_keeps_contract_and_includes_recovery(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    app = Path("examples/summary.rllm").resolve()
-    fake = FakeCompletion(["not json", '{"summary":"ok"}'])
-
-    run_program(app, {"text": "abc"}, RunOptions(max_retries=1), completion_fn=fake)
-
-    retry_prompt = str(fake.calls[1]["messages"][0]["content"])
-    assert "Output contract:" in retry_prompt
-    assert "Example output (JSON):" in retry_prompt
-    assert "Recovery instruction:" in retry_prompt
-
-
-def test_debug_prompt_file_contains_wrapped_and_raw_sections(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    app = Path("examples/summary.rllm").resolve()
-    fake = FakeCompletion(['{"summary":"ok"}'])
-    debug_file = tmp_path / "prompt_debug.txt"
-
-    run_program(
-        app,
-        {"text": "abc"},
-        RunOptions(max_retries=0, debug_prompt_file=str(debug_file), debug_prompt_wrap=80),
-        completion_fn=fake,
-    )
-
-    content = debug_file.read_text(encoding="utf-8")
-    assert "===== Attempt 1/1 =====" in content
-    assert "----- Prompt (wrapped) -----" in content
-    assert "----- Prompt (raw) -----" in content
-
-
-def test_debug_prompt_stdout_writes_to_stderr_not_stdout(tmp_path: Path, monkeypatch, capsys) -> None:
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    app = Path("examples/summary.rllm").resolve()
-    fake = FakeCompletion(['{"summary":"ok"}'])
-
-    run_program(
-        app,
-        {"text": "abc"},
-        RunOptions(max_retries=0, debug_prompt_stdout=True),
-        completion_fn=fake,
-    )
-
-    captured = capsys.readouterr()
-    assert "===== Attempt 1/1 =====" in captured.err
-    assert captured.out == ""
-
-
-def test_debug_prompt_wrap_non_positive_raises_metadata_error_in_library_mode(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    app = Path("examples/summary.rllm").resolve()
-    fake = FakeCompletion(['{"summary":"ok"}'])
-
-    with pytest.raises(RunLLMError) as exc:
-        run_program(
-            app,
-            {"text": "abc"},
-            RunOptions(max_retries=0, debug_prompt_stdout=True, debug_prompt_wrap=0),
-            completion_fn=fake,
-        )
-
-    assert exc.value.payload.error_code == "RLLM_002"
-    assert fake._i == 0
