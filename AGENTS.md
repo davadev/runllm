@@ -77,6 +77,7 @@ This repo does not currently define dedicated lint or formatter tools in `pyproj
   - `userlib/<project_name>/**/workflow.yaml`
   - `rllmlib/**/*.rllm` (project name `rllmlib`)
   - `rllmlib/**/workflow.yaml`
+  - `examples/onboarding/*.rllm` (project name `runllm`)
 - Project docs: `docs/`
 
 Key implementation files:
@@ -90,6 +91,8 @@ Key implementation files:
 - `runllm/mcp_server.py` MCP stdio server and tool handlers
 - `runllm/mcp_registry.py` MCP app discovery/indexing and contract summary generation
 - `runllm/mcp_workflow_registry.py` MCP workflow discovery/indexing
+- `runllm/mcp_utils.py` shared discovery and inference logic
+
 
 ## Code Style Guidelines
 

@@ -125,6 +125,8 @@ Supported keys in this runtime:
 
 If unsupported keys are present, parse fails with `RLLM_003`.
 
+> **Note**: When `format: json` is provided, the runtime automatically translates it to LiteLLM's `response_format: {"type": "json_object"}` for compatible providers like OpenAI.
+
 ## Prompt templating
 
 Template syntax:

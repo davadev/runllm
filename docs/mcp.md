@@ -9,6 +9,14 @@ The core `mcp.runllm` server provides:
 - `list_programs`: Discover apps in the library.
 - `invoke_program`: Run documentation-related helpers.
 
+## Project Discovery
+
+Apps are discovered and assigned to projects based on their location in the repository:
+
+- `userlib/<project>/**/*.rllm` -> project `<project>`
+- `rllmlib/**/*.rllm` -> project `rllmlib`
+- `examples/onboarding/*.rllm` -> project `runllm`
+
 ## Installation in OpenCode
 
 Use `install-opencode` to set up the documentation MCP and builder agent:
