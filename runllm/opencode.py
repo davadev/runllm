@@ -130,7 +130,7 @@ permission:
   grep: allow
   task: allow
   todowrite: allow
-reasoning_effort: medium
+reasoning.effort: medium
 temperature: 0.0
 ---
 
