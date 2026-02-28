@@ -121,7 +121,13 @@ def test_install_opencode_force_overwrites_existing_builder_entry_and_agent(tmp_
     assert code == 0
     payload = _read_payload(out)
     config_payload = json.loads(opencode_json.read_text(encoding="utf-8"))
-    assert config_payload["mcp"]["runllm"]["command"] == ["runllm", "mcp", "serve", "--project", "runllm"]
+    command = config_payload["mcp"]["runllm"]["command"]
+    assert command[0] == "runllm"
+    assert command[1:5] == ["mcp", "serve", "--project", "runllm"]
+    assert "--repo-root" in command
+    repo_root_idx = command.index("--repo-root") + 1
+    assert Path(command[repo_root_idx]).is_absolute()
+
     assert config_payload["mcp"]["runllm"]["enabled"] is True
     assert payload["mcp_updated"] is True
     assert payload["agent_updated"] is True
