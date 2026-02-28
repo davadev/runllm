@@ -42,6 +42,16 @@ def test_help_topic_schema_json(capsys) -> None:
     assert "recommendations" in payload["content"]
 
 
+def test_help_topic_composition_json(capsys) -> None:
+    code = main(["help", "composition", "--format", "json"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    payload = json.loads(out)
+    assert payload["topic"] == "composition"
+    assert "stage_contract_checklist" in payload["content"]
+
+
 def test_top_level_help_includes_help_command(capsys) -> None:
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
@@ -62,6 +72,9 @@ def test_run_help_describes_key_flags(capsys) -> None:
     assert "--trusted-python" in out
     assert "--python-memory-limit-mb" in out
     assert "--ollama-auto-pull" in out
+    assert "--debug-prompt-file" in out
+    assert "--debug-prompt-stdout" in out
+    assert "--debug-prompt-wrap" in out
 
 
 def test_onboard_help_describes_resume_flags(capsys) -> None:
@@ -74,3 +87,52 @@ def test_onboard_help_describes_resume_flags(capsys) -> None:
     assert "--session-file" in out
     assert "--scaffold-file" in out
     assert "--no-save-scaffold" in out
+
+
+def test_bundle_help_describes_flags(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["bundle", "--help"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "wrapper script" in out
+    assert "--repo-root" in out
+    assert "--bin-dir" in out
+
+
+def test_mcp_help_describes_project_scope(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["mcp", "serve", "--help"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "list/invoke tools" in out
+    assert "--project" in out
+    assert "--trusted-workflows" in out
+    assert "--repo-root" in out
+
+
+def test_mcp_help_includes_install_opencode(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["mcp", "--help"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "install-opencode" in out
+
+
+def test_mcp_install_opencode_help_shows_expected_flags(capsys) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["mcp", "install-opencode", "--help"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "--repo-root" in out
+    assert "--runllm-bin" in out
+    assert "--agent-file" in out
+    assert "--force" in out
+    # Project-specific flags should be gone
+    assert "--project" not in out
+    assert "--mcp-name" not in out
+    assert "--project-agent-file" not in out
+    assert "--trusted-workflows" not in out

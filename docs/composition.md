@@ -52,11 +52,21 @@ Rules:
 - Circular dependencies are rejected.
 - Child input should satisfy child `input_schema`.
 
+## Interface stability rules
+
+For robust composition over time:
+
+- Keep intermediate field names stable across stages.
+- Prefer additive schema evolution; avoid breaking key renames.
+- Preserve provenance fields through intermediate artifacts when stages extract evidence.
+- Avoid hidden coupling where downstream logic depends on free-form prose conventions.
+
 ## Common pitfalls
 
 - Passing objects through template interpolation when child expects object type.
 - Name collisions in `uses` entries.
 - Missing required child input keys.
+- Stage outputs that change shape between versions without corresponding parent updates.
 
 ## Debug workflow
 

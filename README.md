@@ -151,6 +151,37 @@ runllm exectime examples/compose_summary_keywords.rllm
 - `runllm stats <file.rllm> [--model ...]`
 - `runllm exectime <file.rllm> [--model ...]`
 - `runllm help <topic> [--format json|text]`
+- `runllm mcp serve --project <name>`
+- `runllm mcp install-opencode [--project <name>]`
+
+## MCP (project-scoped)
+
+`runllm` can expose apps over MCP with a minimal 3-tool interface:
+
+- `list_programs`
+- `invoke_program`
+- `help_topic`
+
+Project scope is inferred from directory layout:
+
+- `userlib/<project_name>/**/*.rllm`
+- `rllmlib/**/*.rllm` (project name is always `rllmlib`)
+
+Run one MCP server per project:
+
+```bash
+runllm mcp serve --project runllm
+```
+
+By default, program index is loaded at server start. Use MCP `list_programs` with `refresh: true` to reload newly added/edited apps without restarting.
+
+Install into OpenCode config automatically:
+
+```bash
+runllm mcp install-opencode --project runllm
+```
+
+This writes OpenCode `opencode.json` MCP entry and creates `agent/runllm-rllm-builder.md`.
 
 ## Live local testing with Ollama
 
@@ -207,6 +238,7 @@ See `examples/`.
 - Recovery playbook: `docs/recovery-playbook.md`
 - CLI reference: `docs/cli.md`
 - Onboarding guide: `docs/onboarding.md`
+- MCP guide: `docs/mcp.md`
 - Error reference: `docs/errors.md`
 - Composition guide: `docs/composition.md`
 - Multi-step apps guide: `docs/multistep-apps.md`

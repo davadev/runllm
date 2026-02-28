@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import textwrap
 import time
 from pathlib import Path
 from typing import Any
@@ -122,6 +124,125 @@ def _validate_context(program: RLLMProgram, payload: dict[str, Any], prompt: str
         )
 
 
+def _schema_example(schema: dict[str, Any], depth: int = 0) -> Any:
+    if depth > 4:
+        return None
+    if not isinstance(schema, dict):
+        return None
+
+    if "enum" in schema and isinstance(schema["enum"], list) and schema["enum"]:
+        return schema["enum"][0]
+
+    schema_type = schema.get("type")
+    if isinstance(schema_type, list):
+        non_null = [item for item in schema_type if item != "null"]
+        schema_type = non_null[0] if non_null else schema_type[0]
+
+    if schema_type == "object":
+        props = schema.get("properties")
+        required = schema.get("required")
+        if not isinstance(props, dict):
+            return {}
+        if not isinstance(required, list):
+            required = list(props.keys())
+        out: dict[str, Any] = {}
+        for key in required:
+            if not isinstance(key, str):
+                continue
+            child_schema = props.get(key, {})
+            out[key] = _schema_example(child_schema, depth + 1)
+        return out
+
+    if schema_type == "array":
+        items = schema.get("items", {})
+        return [_schema_example(items, depth + 1)]
+
+    if schema_type == "string":
+        return "example"
+    if schema_type == "integer":
+        return 0
+    if schema_type == "number":
+        return 0.0
+    if schema_type == "boolean":
+        return False
+    if schema_type == "null":
+        return None
+
+    return None
+
+
+def _build_output_contract(output_schema: dict[str, Any]) -> str:
+    schema_json = json.dumps(output_schema, indent=2, ensure_ascii=True)
+    example_json = json.dumps(_schema_example(output_schema), indent=2, ensure_ascii=True)
+    return (
+        "Output contract:\n"
+        "- Return ONLY one valid JSON object.\n"
+        "- No markdown, no prose, no extra wrappers.\n\n"
+        "Output schema (JSON):\n"
+        f"{schema_json}\n\n"
+        "Example output (JSON):\n"
+        f"{example_json}"
+    )
+
+
+def _build_attempt_prompt(
+    *,
+    rendered_prompt: str,
+    output_schema: dict[str, Any],
+    recovery_prompt: str,
+    attempt: int,
+) -> str:
+    contract = _build_output_contract(output_schema)
+    prompt = f"{rendered_prompt}\n\n{contract}"
+    if attempt == 0:
+        return prompt
+    if recovery_prompt:
+        return f"{prompt}\n\nRecovery instruction:\n{recovery_prompt}"
+    return (
+        f"{prompt}\n\nRecovery instruction:\n"
+        "Last attempt did not satisfy output_schema. Respond with only a valid JSON object that satisfies output_schema."
+    )
+
+
+def _format_prompt_preview(prompt: str, width: int) -> str:
+    lines = prompt.splitlines()
+    wrapped_lines: list[str] = []
+    safe_width = width
+    for line in lines:
+        if not line.strip():
+            wrapped_lines.append("")
+            continue
+        wrapped_lines.extend(textwrap.wrap(line, width=safe_width, break_long_words=False, break_on_hyphens=False) or [""])
+    return "\n".join(wrapped_lines)
+
+
+def _emit_prompt_debug(
+    *,
+    options: RunOptions,
+    attempt: int,
+    max_attempts: int,
+    model: str,
+    prompt: str,
+) -> None:
+    if not options.debug_prompt_file and not options.debug_prompt_stdout:
+        return
+    header = (
+        f"===== Attempt {attempt + 1}/{max_attempts} =====\n"
+        f"Model: {model}\n"
+        "----- Prompt (wrapped) -----\n"
+    )
+    wrapped = _format_prompt_preview(prompt, options.debug_prompt_wrap)
+    raw = f"\n----- Prompt (raw) -----\n{prompt}\n"
+    block = f"{header}{wrapped}{raw}"
+    if options.debug_prompt_stdout:
+        print(block, file=sys.stderr)
+    if options.debug_prompt_file:
+        out_path = Path(options.debug_prompt_file)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with out_path.open("a", encoding="utf-8") as handle:
+            handle.write(block)
+
+
 def _execute_uses(
     program: RLLMProgram,
     input_payload: dict[str, Any],
@@ -165,10 +286,20 @@ def _litellm_completion_call(
     *, model: str, prompt: str, llm_params: dict[str, Any], completion_fn: Any
 ) -> tuple[str, UsageMetrics]:
     started = time.perf_counter()
+
+    # Translate 'format: json' to 'response_format' for OpenAI-style providers
+    # if it's not already set. Many models require this for strict JSON mode.
+    call_params = dict(llm_params)
+    if call_params.get("format") == "json" and "response_format" not in call_params:
+        # LiteLLM supports response_format for OpenAI, Azure, etc.
+        # We keep 'format' for Ollama as it uses it natively.
+        if not model.startswith("ollama/"):
+            call_params["response_format"] = {"type": "json_object"}
+
     response = completion_fn(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        **llm_params,
+        **call_params,
     )
     elapsed_ms = (time.perf_counter() - started) * 1000.0
     content = _extract_content(response)
@@ -192,6 +323,15 @@ def _run_single(
             message="max_retries must be a non-negative integer.",
             details={"max_retries": options.max_retries},
             recovery_hint="Set max_retries to 0 or greater.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+    if options.debug_prompt_wrap <= 0:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="debug_prompt_wrap must be a positive integer.",
+            details={"debug_prompt_wrap": options.debug_prompt_wrap},
+            recovery_hint="Set debug_prompt_wrap to 1 or greater.",
             doc_ref="docs/errors.md#RLLM_002",
         )
 
@@ -218,7 +358,6 @@ def _run_single(
         context.update(pre)
 
     rendered_prompt = render_template(program.prompt, context)
-    _validate_context(program, input_payload, rendered_prompt)
 
     model = _prepare_model(program, options)
     _ensure_provider_credentials(model)
@@ -228,20 +367,23 @@ def _run_single(
 
     last_err: RunLLMError | None = None
     usage = UsageMetrics(latency_ms=0.0, prompt_tokens=0, completion_tokens=0, total_tokens=0)
+    max_attempts = options.max_retries + 1
 
-    for attempt in range(options.max_retries + 1):
-        attempt_prompt = rendered_prompt
-        if attempt > 0:
-            if program.recovery_prompt:
-                attempt_prompt = f"{rendered_prompt}\n\nRecovery instruction:\n{program.recovery_prompt}"
-            else:
-                recovery = (
-                    "Last attempt did not satisfy output_schema. Respond with only a valid JSON object that satisfies output_schema."
-                )
-                attempt_prompt = (
-                    f"{rendered_prompt}\n\nOutput schema:\n{json.dumps(program.output_schema)}\n\n"
-                    f"Recovery instruction:\n{recovery}"
-                )
+    for attempt in range(max_attempts):
+        attempt_prompt = _build_attempt_prompt(
+            rendered_prompt=rendered_prompt,
+            output_schema=program.output_schema,
+            recovery_prompt=program.recovery_prompt,
+            attempt=attempt,
+        )
+        _validate_context(program, input_payload, attempt_prompt)
+        _emit_prompt_debug(
+            options=options,
+            attempt=attempt,
+            max_attempts=max_attempts,
+            model=model,
+            prompt=attempt_prompt,
+        )
         content, usage = _litellm_completion_call(
             model=model,
             prompt=attempt_prompt,

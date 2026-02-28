@@ -255,7 +255,31 @@ runllm stats briefing_pipeline.rllm
 runllm exectime briefing_pipeline.rllm
 ```
 
-## 8) Error-driven triage
+## 8) Evidence lifecycle pattern
+
+For retrieval-heavy pipelines, keep stages explicit:
+
+1. Retrieved candidates
+2. Filtered candidates
+3. Deterministically verified evidence
+4. Final synthesis from verified evidence only
+
+Recommended provenance fields in evidence artifacts:
+
+- `source_path`
+- `source_uid`
+- optional chunk or section identifier
+
+## 9) Parallelism and fallback
+
+Use parallelism only for independent units:
+
+- Parallelize per-item retrieval where calls do not mutate shared state.
+- Merge with deterministic ordering + dedupe keys.
+- Keep per-branch retries local.
+- Add sequential fallback if parallel model calls timeout or fail transiently.
+
+## 10) Error-driven triage
 
 - `RLLM_008`: bad `uses` structure, missing `name/path`, invalid `with`, or cycle.
 - `RLLM_009`: python block failed or returned non-object `result`.
@@ -264,7 +288,7 @@ runllm exectime briefing_pipeline.rllm
 - `RLLM_007`: output JSON was not an object.
 - `RLLM_013`: all schema-retry attempts failed.
 
-## 9) Agent checklist (copy/paste)
+## 11) Agent checklist (copy/paste)
 
 When generating multi-step apps automatically:
 

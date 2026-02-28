@@ -78,7 +78,8 @@ Input:
 
 ## Optional frontmatter keys
 
-- `metadata` object (free-form)
+- `metadata` object (free-form). Special keys:
+  - `suggestions` string array: Recommended related apps to explore next via MCP.
 - `recommended_models` string array
 - `tags` string array
 - `uses` array (composition)
@@ -125,6 +126,8 @@ Supported keys in this runtime:
 
 If unsupported keys are present, parse fails with `RLLM_003`.
 
+> **Note**: When `format: json` is provided, the runtime automatically translates it to LiteLLM's `response_format: {"type": "json_object"}` for compatible providers like OpenAI.
+
 ## Prompt templating
 
 Template syntax:
@@ -136,6 +139,15 @@ Behavior notes:
 
 - Missing paths resolve to empty string.
 - Dict/list values are rendered as JSON text.
+
+Runtime output contract behavior:
+
+- `runllm` appends an output contract block to model prompts on every attempt (including first attempt).
+- Contract block includes:
+  - output schema JSON
+  - deterministic example output JSON derived from schema
+  - strict instruction to return only one JSON object
+- On retries, runtime also appends recovery instruction (`<<<RECOVERY>>>` content when present, otherwise default recovery text).
 
 ## Composition (`uses`)
 
@@ -161,8 +173,9 @@ Rules:
 
 Retries happen when output schema validation fails.
 
+- Output contract (schema + example + JSON-only rule) is present on all attempts.
 - With `<<<RECOVERY>>>` (or `recovery_prompt`), retries append your recovery instruction.
-- Without custom recovery, runtime appends schema + default recovery instruction.
+- Without custom recovery, retries append default recovery instruction.
 
 ## Python blocks
 
@@ -198,3 +211,12 @@ Runtime expects a JSON object.
 
 Before model call, runtime estimates total context tokens from prompt + input.
 If estimate exceeds `max_context_window`, run fails with `RLLM_012`.
+
+## MCP project inference (v0.2)
+
+For MCP discovery, project scope is inferred from file paths, not frontmatter metadata.
+
+- `userlib/<project_name>/**/*.rllm` -> project = `<project_name>`
+- `rllmlib/**/*.rllm` -> project = `rllmlib`
+
+`userlib/*.rllm` files are not indexed by MCP.

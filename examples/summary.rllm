@@ -29,6 +29,8 @@ recommended_models:
   - openai/gpt-4o-mini
 metadata:
   category: nlp
+  suggestions:
+    - runllm:examples/onboarding/prompt_builder.rllm
 ---
 You are a summarization app.
 Return ONLY valid JSON object matching this shape:

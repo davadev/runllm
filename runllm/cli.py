@@ -13,8 +13,10 @@ import yaml
 from runllm.config import get_runtime_config, load_runtime_config
 from runllm.errors import RunLLMError, make_error
 from runllm.executor import estimate_execution_time_ms, run_program
+from runllm.help_content import HELP_TOPICS, help_topics_json, help_topics_text
 from runllm.models import RunOptions
 from runllm.onboarding import cmd_onboard
+from runllm.opencode import bundle_project, install_opencode_integration
 from runllm.parser import parse_rllm_file
 from runllm.stats import StatsStore
 
@@ -23,231 +25,17 @@ class _HelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescrip
     pass
 
 
-def _help_topics_text() -> dict[str, str]:
-    return {
-        "rllm": textwrap.dedent(
-            """
-            .rllm app authoring reference
-
-            Required frontmatter keys:
-            - name (string)
-            - description (string)
-            - version (string)
-            - author (string)
-            - max_context_window (positive integer)
-            - input_schema (JSON Schema object)
-            - output_schema (JSON Schema object)
-            - llm (object, must include model)
-            - llm_params (object)
-
-            Optional frontmatter keys:
-            - runllm_compat (object with min and optional max_exclusive)
-
-            Body structure:
-            - main prompt text
-            - optional <<<RECOVERY>>> block
-            - optional ```rllm-python pre/post blocks
-
-            Minimal template:
-            ---
-            name: my_app
-            description: One sentence purpose.
-            version: 0.1.0
-            author: your_name
-            max_context_window: 8000
-            input_schema:
-              type: object
-              properties:
-                text: { type: string }
-              required: [text]
-              additionalProperties: false
-            output_schema:
-              type: object
-              properties:
-                result: { type: string }
-              required: [result]
-              additionalProperties: false
-            llm:
-              model: ollama/llama3.1:8b
-            llm_params:
-              temperature: 0
-              format: json
-            ---
-            Return only JSON: {"result":"..."}
-            Input: {{input.text}}
-            """
-        ).strip(),
-        "schema": textwrap.dedent(
-            """
-            JSON Schema guidance
-
-            Good defaults:
-            - type: object
-            - required: [...] for mandatory fields
-            - additionalProperties: false for strict contracts
-
-            Common patterns:
-            - classification: enum + confidence in [0,1]
-            - extraction: arrays of strings/objects
-            - nullable optional field: type: [string, "null"]
-
-            Avoid:
-            - missing required list
-            - very deep nested objects for small models
-            - loose free-form output where enums work
-            """
-        ).strip(),
-        "recovery": textwrap.dedent(
-            """
-            Recovery prompt playbook
-
-            Use <<<RECOVERY>>> for retry instructions.
-            Keep it short and schema-focused.
-
-            Recommended pattern:
-            Previous response failed validation.
-            Return ONLY JSON object with exact keys: <k1>, <k2>...
-            Do not include markdown, prose, or schema definitions.
-            """
-        ).strip(),
-        "examples": textwrap.dedent(
-            """
-            Example command flow
-
-            1) Validate app file
-               runllm validate app.rllm
-
-            2) Inspect contract
-               runllm inspect app.rllm
-
-            3) Run app
-               runllm run app.rllm --input '{"text":"hello"}'
-
-            4) Check quality and latency
-               runllm stats app.rllm
-               runllm exectime app.rllm
-            """
-        ).strip(),
-        "credentials": textwrap.dedent(
-            """
-            Provider credential setup
-
-            OpenAI example:
-            export OPENAI_API_KEY="sk-..."
-
-            Autoload precedence (highest -> lowest):
-            1. process environment
-            2. CWD .env
-            3. ~/.config/runllm/.env
-            4. ~/.config/runllm/config.yaml (non-secret defaults)
-
-            Disable autoload:
-            - CLI: --no-config-autoload
-            - ENV: RUNLLM_NO_CONFIG_AUTOLOAD=1
-            """
-        ).strip(),
-        "config": textwrap.dedent(
-            """
-            Runtime config defaults
-
-            File: ~/.config/runllm/config.yaml
-
-            Supported keys:
-            runtime.default_model
-            runtime.default_max_retries
-            runtime.default_ollama_auto_pull
-            provider.ollama_api_base
-            """
-        ).strip(),
-    }
-
-
-def _help_topics_json() -> dict[str, Any]:
-    return {
-        "rllm": {
-            "required_fields": [
-                "name",
-                "description",
-                "version",
-                "author",
-                "max_context_window",
-                "input_schema",
-                "output_schema",
-                "llm",
-                "llm_params",
-            ],
-            "optional_fields": ["runllm_compat", "metadata", "recommended_models", "tags", "uses", "recovery_prompt"],
-            "templating": ["{{input.<path>}}", "{{uses.<dep>.<path>}}"],
-            "optional_sections": ["<<<RECOVERY>>>", "```rllm-python pre/post"],
-            "docs": [
-                "docs/rllm-spec.md",
-                "docs/schema-cookbook.md",
-                "docs/recovery-playbook.md",
-            ],
-        },
-        "schema": {
-            "recommendations": [
-                "Use type: object",
-                "Use required for mandatory keys",
-                "Use additionalProperties: false for strict outputs",
-                "Prefer enums over free text where possible",
-            ]
-        },
-        "recovery": {
-            "pattern": [
-                "State previous response failed validation",
-                "Require only JSON object",
-                "List exact expected keys",
-                "Forbid prose/markdown/schema definitions",
-            ]
-        },
-        "examples": {
-            "commands": [
-                "runllm validate app.rllm",
-                "runllm inspect app.rllm",
-                "runllm run app.rllm --input '{\"text\":\"hello\"}'",
-                "runllm stats app.rllm",
-                "runllm exectime app.rllm",
-            ]
-        },
-        "credentials": {
-            "autoload_precedence": [
-                "process_env",
-                "cwd_dotenv",
-                "user_dotenv",
-                "user_config_yaml",
-            ],
-            "common_env_vars": [
-                "OPENAI_API_KEY",
-                "ANTHROPIC_API_KEY",
-                "GOOGLE_API_KEY",
-                "MISTRAL_API_KEY",
-                "COHERE_API_KEY",
-            ],
-        },
-        "config": {
-            "path": "~/.config/runllm/config.yaml",
-            "runtime_keys": [
-                "runtime.default_model",
-                "runtime.default_max_retries",
-                "runtime.default_ollama_auto_pull",
-            ],
-            "provider_keys": ["provider.ollama_api_base"],
-        },
-    }
-
-
 def cmd_help(args: argparse.Namespace) -> int:
     topic = args.topic
     if args.format == "json":
         payload = {
             "topic": topic,
-            "content": _help_topics_json()[topic],
+            "content": help_topics_json()[topic],
         }
         _print_json(payload)
         return 0
 
-    print(_help_topics_text()[topic])
+    print(help_topics_text()[topic])
     return 0
 
 
@@ -297,6 +85,15 @@ def cmd_run(args: argparse.Namespace) -> int:
             recovery_hint="Set --python-memory-limit-mb to 0 or greater.",
             doc_ref="docs/errors.md#RLLM_002",
         )
+    if args.debug_prompt_wrap <= 0:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="debug_prompt_wrap must be a positive integer.",
+            details={"debug_prompt_wrap": args.debug_prompt_wrap},
+            recovery_hint="Set --debug-prompt-wrap to 1 or greater.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
     model = args.model or cfg.default_model
     if args.ollama_auto_pull is None:
         ollama_auto_pull = cfg.default_ollama_auto_pull
@@ -309,6 +106,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         ollama_auto_pull=ollama_auto_pull,
         trusted_python=args.trusted_python,
         python_memory_limit_mb=python_memory_limit_mb,
+        debug_prompt_file=args.debug_prompt_file,
+        debug_prompt_stdout=args.debug_prompt_stdout,
+        debug_prompt_wrap=args.debug_prompt_wrap,
     )
     output = run_program(
         args.file,
@@ -366,6 +166,64 @@ def cmd_exectime(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mcp_serve(args: argparse.Namespace) -> int:
+    project = str(args.project).strip()
+    if not project:
+        raise make_error(
+            error_code="RLLM_002",
+            error_type="MetadataValidationError",
+            message="project must be a non-empty string.",
+            details={"project": args.project},
+            recovery_hint="Pass --project with a non-empty value.",
+            doc_ref="docs/errors.md#RLLM_002",
+        )
+    from runllm.mcp_server import run_mcp_server
+
+    repo_root_arg = getattr(args, "repo_root", None)
+    repo_root: Path | None = None
+    if repo_root_arg is not None:
+        repo_root_text = str(repo_root_arg).strip()
+        if not repo_root_text:
+            raise make_error(
+                error_code="RLLM_002",
+                error_type="MetadataValidationError",
+                message="repo_root must be a non-empty string when provided.",
+                details={"repo_root": repo_root_arg},
+                recovery_hint="Pass --repo-root with a valid directory path or omit it.",
+                doc_ref="docs/errors.md#RLLM_002",
+            )
+        repo_root = Path(repo_root_text).resolve()
+
+    run_mcp_server(
+        project=project,
+        repo_root=repo_root,
+        autoload_config=getattr(args, "_autoload_config", None),
+        trusted_workflows=bool(getattr(args, "trusted_workflows", False)),
+    )
+    return 0
+
+
+def cmd_mcp_install_opencode(args: argparse.Namespace) -> int:
+    payload = install_opencode_integration(
+        repo_root=getattr(args, "repo_root", None),
+        runllm_bin=args.runllm_bin,
+        agent_file=args.agent_file,
+        force=args.force,
+    )
+    _print_json(payload)
+    return 0
+
+
+def cmd_bundle(args: argparse.Namespace) -> int:
+    payload = bundle_project(
+        project_name=args.project,
+        repo_root=args.repo_root,
+        bin_dir=args.bin_dir,
+    )
+    _print_json(payload)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="runllm",
@@ -392,7 +250,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(
         dest="command",
         required=True,
-        metavar="{run,validate,inspect,stats,exectime,onboard,help}",
+        metavar="{run,validate,inspect,stats,exectime,onboard,bundle,help,mcp}",
     )
 
     run_p = sub.add_parser(
@@ -424,6 +282,23 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=256,
         help="Memory cap for untrusted python blocks; set 0 to disable",
+    )
+    run_p.add_argument(
+        "--debug-prompt-file",
+        metavar="PATH",
+        help="Write exact prompts sent to model to a formatted debug file",
+    )
+    run_p.add_argument(
+        "--debug-prompt-stdout",
+        action="store_true",
+        help="Print exact prompts sent to model to stderr (keeps JSON stdout clean)",
+    )
+    run_p.add_argument(
+        "--debug-prompt-wrap",
+        metavar="N",
+        type=int,
+        default=100,
+        help="Line wrap width used for prompt debug output",
     )
     run_p.set_defaults(func=cmd_run)
 
@@ -494,6 +369,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     o_p.set_defaults(func=cmd_onboard)
 
+    b_p = sub.add_parser(
+        "bundle",
+        help="Bundle a project into a standalone CLI shim",
+        description="Create a wrapper script for a project staging script.",
+        formatter_class=_HelpFormatter,
+    )
+    b_p.add_argument("project", metavar="NAME", help="Project name under userlib/")
+    b_p.add_argument(
+        "--repo-root",
+        metavar="PATH",
+        default=None,
+        help="Repository root (defaults to current working directory).",
+    )
+    b_p.add_argument(
+        "--bin-dir",
+        metavar="PATH",
+        default=None,
+        help="Target directory for the shim script (defaults to .bin/ in repo root).",
+    )
+    b_p.set_defaults(func=cmd_bundle)
+
     h_p = sub.add_parser(
         "help",
         help="Show LLM-oriented authoring help topics",
@@ -502,7 +398,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     h_p.add_argument(
         "topic",
-        choices=["rllm", "schema", "recovery", "examples", "credentials", "config"],
+        choices=list(HELP_TOPICS),
         metavar="TOPIC",
         help="Help topic to print",
     )
@@ -513,6 +409,74 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format for help topic",
     )
     h_p.set_defaults(func=cmd_help)
+
+    m_p = sub.add_parser(
+        "mcp",
+        help="Run minimal MCP server",
+        description="MCP utilities for serving and OpenCode integration.",
+        formatter_class=_HelpFormatter,
+    )
+    m_sub = m_p.add_subparsers(dest="mcp_command", required=True, metavar="{serve,install-opencode}")
+    m_serve = m_sub.add_parser(
+        "serve",
+        help="Serve MCP tools for one project",
+        description=(
+            "Start MCP stdio server exposing list/invoke tools for programs and workflows "
+            "for one project scope."
+        ),
+        formatter_class=_HelpFormatter,
+    )
+    m_serve.add_argument(
+        "--project",
+        metavar="NAME",
+        required=True,
+        help="Project scope name (userlib/<project> or rllmlib).",
+    )
+    m_serve.add_argument(
+        "--trusted-workflows",
+        action="store_true",
+        help="Enable invoke_workflow execution of Python workflow entrypoints (trusted repos only).",
+    )
+    m_serve.add_argument(
+        "--repo-root",
+        metavar="PATH",
+        default=None,
+        help="Repository root used for MCP discovery (defaults to current working directory).",
+    )
+    m_serve.set_defaults(func=cmd_mcp_serve)
+
+    m_install = m_sub.add_parser(
+        "install-opencode",
+        help="Install runllm MCP into OpenCode config",
+        description=(
+            "Upsert OpenCode opencode.json MCP entry and create a runllm builder agent prompt file."
+        ),
+        formatter_class=_HelpFormatter,
+    )
+    m_install.add_argument(
+        "--runllm-bin",
+        metavar="PATH_OR_CMD",
+        default="runllm",
+        help="Executable or path used in MCP command array.",
+    )
+    m_install.add_argument(
+        "--repo-root",
+        metavar="PATH",
+        default=None,
+        help="Repository root pinned into generated MCP command arrays.",
+    )
+    m_install.add_argument(
+        "--agent-file",
+        metavar="FILENAME",
+        default="runllm-rllm-builder.md",
+        help="Builder agent filename created under OpenCode agent directory.",
+    )
+    m_install.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing builder MCP entry and agent file.",
+    )
+    m_install.set_defaults(func=cmd_mcp_install_opencode)
 
     return parser
 

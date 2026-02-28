@@ -11,3 +11,8 @@ build/
 .env
 .env.*
 !.env.example
+
+# Local scratch examples
+temp/
+log/
+userlib/

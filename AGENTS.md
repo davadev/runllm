@@ -62,12 +62,28 @@ This repo does not currently define dedicated lint or formatter tools in `pyproj
   - `python3 -m runllm.cli inspect examples/summary.rllm`
 - Show stats:
   - `python3 -m runllm.cli stats examples/summary.rllm`
+- Estimate execution time:
+  - `python3 -m runllm.cli exectime examples/summary.rllm`
+- Bundle a project:
+  - `python3 -m runllm.cli bundle jw_deep_research`
+- Show authoring help:
+  - `python3 -m runllm.cli help rllm`
+- Show MCP command help:
+  - `python3 -m runllm.cli mcp serve --help`
+- Start MCP server with trusted workflow execution (trusted repos only):
+  - `python3 -m runllm.cli mcp serve --project runllm --trusted-workflows`
 
 ## Repository Layout
 
 - Source package: `runllm/`
 - Tests: `tests/`
 - Example apps: `examples/`
+- User app libraries for MCP discovery:
+  - `userlib/<project_name>/**/*.rllm`
+  - `userlib/<project_name>/**/workflow.yaml`
+  - `rllmlib/**/*.rllm` (project name `rllmlib`)
+  - `rllmlib/**/workflow.yaml`
+  - `examples/onboarding/*.rllm` (project name `runllm`)
 - Project docs: `docs/`
 
 Key implementation files:
@@ -78,6 +94,13 @@ Key implementation files:
 - `runllm/validation.py` JSON parsing and JSON Schema validation
 - `runllm/errors.py` structured error payload helpers
 - `runllm/stats.py` SQLite stats storage and aggregation
+- `runllm/mcp_server.py` MCP stdio server and tool handlers
+- `runllm/mcp_registry.py` MCP app discovery/indexing and contract summary generation
+- `runllm/mcp_workflow_registry.py` MCP workflow discovery/indexing
+- `runllm/mcp_utils.py` shared discovery and inference logic
+- `runllm/help_content.py` canonical authoring guidance content
+- `runllm/opencode.py` OpenCode integration and project bundling
+
 
 ## Code Style Guidelines
 
@@ -130,13 +153,13 @@ Follow existing style in this codebase.
 - Treat app `version` as app-owned versioning and `runllm_compat` as runtime-compatibility metadata.
 - If changing parsing behavior, update docs in the same change.
 
-### CLI Behavior
+### MCP and Navigation Conventions
 
-- CLI outputs JSON payloads for both success and failure.
-- Keep exit codes stable:
-  - `0` success
-  - `1` failure
-- New CLI flags must be reflected in `docs/cli.md`.
+- Use project-scoped discovery to avoid cross-project context bloat.
+- Provide `suggestions` in app/workflow `metadata` to guide users/agents to related content.
+- Suggestions should follow the format `project:path/to/file.rllm`.
+- Ensure MCP tool discovery reflects enabled capabilities (do not advertise disabled tools).
+- Keep workflow execution over MCP behind explicit trust opt-in (`--trusted-workflows`).
 
 ### Stats and Persistence
 
@@ -166,6 +189,7 @@ Minimum docs to evaluate:
 - `docs/errors.md`
 - `docs/migration.md` (when compatibility/version behavior changes)
 - `docs/composition.md` (if `uses` behavior changed)
+- `docs/mcp.md` (if MCP tools/registry/workflow behavior changed)
 
 ## Change Management Notes
 
@@ -177,6 +201,9 @@ Minimum docs to evaluate:
 ## LLM Contribution Workflow (Short)
 
 Use this branch strategy for all coding-agent changes.
+
+Current active release branch: `release/0.2`
+Current working feature branch: `feature/mcp-project-scoped-discovery`
 
 ### Branches
 
@@ -223,3 +250,4 @@ If release gate requires live tests, also run:
 3. Merge `release/*` into `main`.
 4. Tag release on `main` (for example `v0.1.0`).
 5. Publish release notes.
+6. Create next release branch (for example `release/0.2`) and update this file's "Current active release branch" entry in the same release operation.

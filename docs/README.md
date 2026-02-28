@@ -32,6 +32,7 @@ Repository planning:
 
 - `onboarding.md`
 - `cli.md`
+- `mcp.md`
 - `composition.md`
 - `multistep-apps.md`
 - `ollama.md`

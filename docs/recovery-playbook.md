@@ -1,6 +1,6 @@
 # Recovery Playbook
 
-Use `<<<RECOVERY>>>` to improve schema compliance when first response fails.
+Use `<<<RECOVERY>>>` to improve schema compliance when a response fails validation.
 
 Related docs:
 
@@ -12,6 +12,14 @@ Related docs:
 ## Principle
 
 Recovery should be short, direct, and schema-focused.
+
+Runtime behavior note:
+
+- `runllm` now appends an output contract on every attempt (including first attempt):
+  - output schema JSON
+  - deterministic example output JSON
+  - JSON-only response rule
+- Recovery text should therefore focus on correcting mistakes, not restating full schema.
 
 Bad:
 - "Please try again and do better."
@@ -47,3 +55,16 @@ Do not include markdown, prose, or schema definitions.
 - Start with `--max-retries 2`.
 - If still failing, improve prompt/recovery first.
 - Switch model only after prompt + schema simplification.
+
+## Inspect exact prompt sent to model
+
+Use prompt debug flags when tuning compliance:
+
+```bash
+runllm run app.rllm --input '{"text":"sample"}' --debug-prompt-file temp/prompt-debug.txt
+```
+
+Useful flags:
+- `--debug-prompt-file PATH` appends formatted wrapped + raw prompt blocks.
+- `--debug-prompt-stdout` prints debug prompt blocks to stderr (stdout stays valid JSON).
+- `--debug-prompt-wrap N` controls wrapped preview width.
